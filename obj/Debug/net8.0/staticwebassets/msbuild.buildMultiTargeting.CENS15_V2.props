@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\CENS15_V2.props" />
+</Project>
