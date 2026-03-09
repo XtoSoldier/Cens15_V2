@@ -24,7 +24,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Ingres· el token JWT asÌ: Bearer {tu_token}"
+        Description = "Ingres√° el token JWT as√≠: Bearer {tu_token}"
     });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -77,7 +77,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseNpgsql(AppDbContextFactory.ConnectionString)
 );
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
