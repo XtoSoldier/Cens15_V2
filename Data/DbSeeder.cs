@@ -27,32 +27,34 @@ namespace CENS15_V2.Data
                 }
             }
             await context.SaveChangesAsync();
+            const string seedAdminEmail = "admin@admin.com";
 
-            if (!context.Users.Any())
+            var adminExists = await context.Auths.AnyAsync(a => a.Email == seedAdminEmail);
+            if (adminExists)
+                return;
+
+            var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
+
+            var user = new User
             {
-                var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
+                Id = Guid.NewGuid(),
+                FirstName = "Super",
+                LastName = "Admin",
+                Image = "default.png",
+                RoleId = adminRole.Id,
+                Status = true
+            };
 
-                var user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Super",
-                    LastName = "Admin",
-                    Image = "default.png",
-                    RoleId = adminRole.Id,
-                    Status = true
-                };
+            var auth = new Auth
+            {
+                Id = user.Id,
+                Email = seedAdminEmail,
+                PasswordHash = hasher.Hash("Admin123*"),
+                User = user
+            };
 
-                var auth = new Auth
-                {
-                    Id = user.Id,
-                    Email = "admin@admin.com",
-                    PasswordHash = hasher.Hash("Admin123*"),
-                    User = user
-                };
-
-                context.AddRange(user, auth);
-                await context.SaveChangesAsync();
-            }
+            context.AddRange(user, auth);
+            await context.SaveChangesAsync();
         }
     }
 }
