@@ -4,11 +4,16 @@
 
 # Visual Studio / .NET
 .vs/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
+.suo
+.user
+.userosscache
+.sln.docstates
+.vsidx
+.bin
 # Build outputs
-[Bb]in/
-[Oo]bj/
+config/
+v17/
+FileContentIndex/
+ProjectEvaluation/
+
+.vs
