@@ -1,6 +1,5 @@
 ﻿using CENS15_V2.Data;
 using CENS15_V2.Models;
-using CENS15_V2.Models.DTOs.ResponsibilitiesDTOs;
 using CENS15_V2.Models.DTOs.RolesDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -58,16 +57,16 @@ namespace CENS15_V2.Services
                 Responsibilities = new List<RoleResponsibility>()
             };
 
-            var newResponsibilityIds = request.ResponsibilityIds?.Distinct().ToList() ?? new List<Guid>();
-            await EnsureResponsibilitiesExistAsync(newResponsibilityIds);
-
-            foreach (var responsibilityId in newResponsibilityIds)
+            if (request.ResponsibilityIds != null && request.ResponsibilityIds.Count > 0)
             {
-                role.Responsibilities.Add(new RoleResponsibility
+                foreach (var responsibilityId in request.ResponsibilityIds.Distinct())
                 {
-                    RoleId = role.Id,
-                    ResponsibilityId = responsibilityId
-                });
+                    role.Responsibilities.Add(new RoleResponsibility
+                    {
+                        RoleId = role.Id,
+                        ResponsibilityId = responsibilityId
+                    });
+                }
             }
 
             _context.Roles.Add(role);
@@ -94,9 +93,18 @@ namespace CENS15_V2.Services
 
             role.Name = request.Name;
 
-            var ids = request.ResponsibilityIds?.Distinct().ToList() ?? new List<Guid>();
-            await EnsureResponsibilitiesExistAsync(ids);
-            ReplaceResponsibilities(role, ids);
+            var currentRelations = role.Responsibilities.ToList();
+            _context.RemoveRange(currentRelations);
+
+            var newResponsibilityIds = request.ResponsibilityIds?.Distinct().ToList() ?? new List<Guid>();
+            foreach (var responsibilityId in newResponsibilityIds)
+            {
+                role.Responsibilities.Add(new RoleResponsibility
+                {
+                    RoleId = role.Id,
+                    ResponsibilityId = responsibilityId
+                });
+            }
 
             await _context.SaveChangesAsync();
             return true;
@@ -113,72 +121,6 @@ namespace CENS15_V2.Services
             _context.Roles.Remove(role);
             await _context.SaveChangesAsync();
             return true;
-        }
-
-        public async Task<bool> AssignResponsibilitiesAsync(Guid roleId, AssignResponsibilitiesRequest request)
-        {
-            var role = await _context.Roles
-                .Include(r => r.Responsibilities)
-                .FirstOrDefaultAsync(r => r.Id == roleId);
-
-            if (role == null)
-            {
-                return false;
-            }
-
-            var ids = request.ResponsibilityIds.Distinct().ToList();
-            await EnsureResponsibilitiesExistAsync(ids);
-            ReplaceResponsibilities(role, ids);
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<IEnumerable<ResponsibilityDto>> GetResponsibilitiesAsync(Guid roleId)
-        {
-            var roleExists = await _context.Roles.AnyAsync(r => r.Id == roleId);
-            if (!roleExists)
-            {
-                return Enumerable.Empty<ResponsibilityDto>();
-            }
-
-            return await _context.Set<RoleResponsibility>()
-                .AsNoTracking()
-                .Where(rr => rr.RoleId == roleId)
-                .Select(rr => new ResponsibilityDto
-                {
-                    Id = rr.Responsibility.Id,
-                    Name = rr.Responsibility.Name,
-                    Description = rr.Responsibility.Description
-                })
-                .ToListAsync();
-        }
-
-        private async Task EnsureResponsibilitiesExistAsync(ICollection<Guid> ids)
-        {
-            if (ids.Count == 0)
-            {
-                return;
-            }
-
-            var existingCount = await _context.Responsibilities.CountAsync(r => ids.Contains(r.Id));
-            if (existingCount != ids.Count)
-            {
-                throw new InvalidOperationException("Una o más responsabilidades no existen.");
-            }
-        }
-
-        private void ReplaceResponsibilities(Role role, ICollection<Guid> responsibilityIds)
-        {
-            var currentRelations = role.Responsibilities.ToList();
-            _context.RemoveRange(currentRelations);
-            role.Responsibilities = responsibilityIds
-                .Select(id => new RoleResponsibility
-                {
-                    RoleId = role.Id,
-                    ResponsibilityId = id
-                })
-                .ToList();
         }
     }
 }

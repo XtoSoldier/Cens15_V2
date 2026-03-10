@@ -43,14 +43,6 @@ namespace CENS15_V2.Data
                 .HasKey(rp => new { rp.RoleId, rp.PermissionId });
             modelBuilder.Entity<RoleResponsibility>()
                 .HasKey(rr => new { rr.RoleId, rr.ResponsibilityId });
-            modelBuilder.Entity<RoleResponsibility>()
-                .HasOne(rr => rr.Role)
-                .WithMany(r => r.Responsibilities)
-                .HasForeignKey(rr => rr.RoleId);
-            modelBuilder.Entity<RoleResponsibility>()
-                .HasOne(rr => rr.Responsibility)
-                .WithMany(r => r.Roles)
-                .HasForeignKey(rr => rr.ResponsibilityId);
         }
 
         private static void ConfigureClientProduct(ModelBuilder modelBuilder)
