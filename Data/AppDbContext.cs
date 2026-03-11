@@ -93,7 +93,7 @@ namespace CENS15_V2.Data
         private static void ConfigureClientProduct(ModelBuilder modelBuilder)
         {
             ///Product ↔ Module (1–N)
-                        ///UUID automático en PostgreSQL
+            ///UUID automático en PostgreSQL
             modelBuilder.HasPostgresExtension("pgcrypto");
             modelBuilder.Entity<User>()
                         .Property(u => u.Id)
