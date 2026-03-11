@@ -32,6 +32,7 @@ namespace CENS15_V2.Services
 
         public async Task<AlumnoDto> CreateAsync(CreateAlumnoRequest request)
         {
+            ValidateGenero(request.Genero);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
 
             var alumno = _mapper.Map<Alumno>(request);
@@ -44,6 +45,7 @@ namespace CENS15_V2.Services
 
         public async Task<bool> UpdateAsync(int id, UpdateAlumnoRequest request)
         {
+            ValidateGenero(request.Genero);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
 
             var alumno = await QueryAlumno().FirstOrDefaultAsync(a => a.Id == id);
@@ -56,6 +58,7 @@ namespace CENS15_V2.Services
             alumno.Apellidos = request.Apellidos;
             alumno.NumeroDocumento = request.NumeroDocumento;
             alumno.FechaNacimiento = request.FechaNacimiento;
+            alumno.Genero = request.Genero;
             alumno.Domicilio = request.Domicilio;
 
             alumno.DatosNacimiento ??= new AlumnoNacimiento();
@@ -101,6 +104,15 @@ namespace CENS15_V2.Services
                 .Include(a => a.Contacto)
                 .Include(a => a.Documentos)
                     .ThenInclude(d => d.TipoDocumentoAlumno);
+        }
+
+
+        private static void ValidateGenero(Genero genero)
+        {
+            if (!Enum.IsDefined(typeof(Genero), genero))
+            {
+                throw new InvalidOperationException("El género debe ser Varon o Mujer.");
+            }
         }
 
         private async Task ValidateTipoDocumentosAsync(IEnumerable<int> tipoDocumentoIds)
