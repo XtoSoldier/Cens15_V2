@@ -26,7 +26,6 @@ namespace CENS15_V2.Data
             base.OnModelCreating(modelBuilder);
             ConfigureUserAuthToken(modelBuilder);
             ConfigureAlumno(modelBuilder);
-            ConfigureClientProduct(modelBuilder);
         }
 
         public static void ConfigureUserAuthToken(ModelBuilder modelBuilder)
@@ -89,33 +88,7 @@ namespace CENS15_V2.Data
                 .HasIndex(a => a.NumeroDocumento)
                 .IsUnique();
         }
-
-        private static void ConfigureClientProduct(ModelBuilder modelBuilder)
-        {
-            ///Product ↔ Module (1–N)
-            ///UUID automático en PostgreSQL
-            modelBuilder.HasPostgresExtension("pgcrypto");
-            modelBuilder.Entity<User>()
-                        .Property(u => u.Id)
-                        .HasDefaultValueSql("gen_random_uuid()");
-            modelBuilder.Entity<Auth>()
-                        .Property(a => a.Id)
-                        .HasDefaultValueSql("gen_random_uuid()");
-            modelBuilder.Entity<Token>()
-                        .Property(t => t.Id)
-                        .HasDefaultValueSql("gen_random_uuid()");
-            modelBuilder.Entity<Role>()
-                        .Property(r => r.Id)
-                        .HasDefaultValueSql("gen_random_uuid()");
-            modelBuilder.Entity<Responsibility>()
-                        .Property(r => r.Id)
-                        .HasDefaultValueSql("gen_random_uuid()");
-          
-
-
-
-
-        }
+         
 
 
     }
