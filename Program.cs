@@ -85,7 +85,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
 
 var app = builder.Build();
 
