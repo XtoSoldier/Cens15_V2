@@ -96,6 +96,7 @@ namespace CENS15_V2.Data
                 .HasIndex(a => a.NumeroDocumento)
                 .IsUnique();
         }
+         
 
         private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
         {
