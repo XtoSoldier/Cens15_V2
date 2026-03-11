@@ -85,7 +85,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
 
 var app = builder.Build();
 
@@ -107,7 +108,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var hasher = scope.ServiceProvider.GetRequiredService<PasswordHasher>();
 
-    db.Database.EnsureCreated();
+    await db.Database.MigrateAsync();
     await DbSeeder.Seed(db, hasher);
 }
 
