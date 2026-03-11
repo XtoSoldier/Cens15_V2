@@ -1,4 +1,5 @@
-﻿using CENS15_V2.Models.DTOs.RolesDTOs;
+﻿using CENS15_V2.Models.DTOs.ResponsibilitiesDTOs;
+using CENS15_V2.Models.DTOs.RolesDTOs;
 
 namespace CENS15_V2.Services.Interfaces
 {
@@ -9,5 +10,7 @@ namespace CENS15_V2.Services.Interfaces
         Task<RoleDto> CreateAsync(CreateRoleRequest request);
         Task<bool> UpdateAsync(Guid id, UpdateRoleRequest request);
         Task<bool> DeleteAsync(Guid id);
+        Task<bool> AssignResponsibilitiesAsync(Guid roleId, AssignResponsibilitiesRequest request);
+        Task<IEnumerable<ResponsibilityDto>> GetResponsibilitiesAsync(Guid roleId);
     }
 }
