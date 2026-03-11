@@ -90,7 +90,7 @@ namespace CENS15_V2.Data
                 .IsUnique();
         }
 
-        private static void ConfigureClientProduct(ModelBuilder modelBuilder)
+        private static void ConfigureAlumno(ModelBuilder modelBuilder)
         {
             ///Product ↔ Module (1–N)
                         ///UUID automático en PostgreSQL
@@ -112,10 +112,29 @@ namespace CENS15_V2.Data
                         .HasDefaultValueSql("gen_random_uuid()");
           
 
+            modelBuilder.Entity<Alumno>()
+                .HasOne(a => a.Contacto)
+                .WithOne(c => c.Alumno)
+                .HasForeignKey<AlumnoContacto>(c => c.AlumnoId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Alumno>()
+                .HasMany(a => a.Documentos)
+                .WithOne(d => d.Alumno)
+                .HasForeignKey(d => d.AlumnoId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<AlumnoDocumento>()
+                .HasOne(d => d.TipoDocumentoAlumno)
+                .WithMany(t => t.Documentos)
+                .HasForeignKey(d => d.TipoDocumentoAlumnoId)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Alumno>()
+                .HasIndex(a => a.NumeroDocumento)
+                .IsUnique();
         }
+         
 
 
     }
