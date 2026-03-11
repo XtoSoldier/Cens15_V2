@@ -1,6 +1,6 @@
-namespace CENS15_V2.Models.DTOs.AlumnosDTOs
+namespace CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs
 {
-    public class UpdateAlumnoDocumentoRequest
+    public class UpdateAlumnoDocumentoItemRequest
     {
         public int TipoDocumentoAlumnoId { get; set; }
         public bool Presentado { get; set; }

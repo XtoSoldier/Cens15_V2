@@ -73,7 +73,8 @@ namespace CENS15_V2.Services
             alumno.Documentos = request.Documentos.Select(d => new AlumnoDocumento
             {
                 TipoDocumentoAlumnoId = d.TipoDocumentoAlumnoId,
-                Presentado = d.Presentado
+                Presentado = d.Presentado,
+                ImagenUrl = d.ImagenUrl
             }).ToList();
 
             await _context.SaveChangesAsync();

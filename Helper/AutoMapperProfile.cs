@@ -1,5 +1,6 @@
 using AutoMapper;
 using CENS15_V2.Models;
+using CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs;
 using CENS15_V2.Models.DTOs.AlumnosDTOs;
 
 namespace CENS15_V2.Helper
@@ -14,6 +15,13 @@ namespace CENS15_V2.Helper
             CreateMap<AlumnoDocumento, AlumnoDocumentoDto>()
                 .ForMember(dest => dest.TipoDocumentoAlumnoNombre,
                     opt => opt.MapFrom(src => src.TipoDocumentoAlumno.Nombre));
+
+            CreateMap<AlumnoDocumento, AlumnoDocumentoItemDto>()
+                .ForMember(dest => dest.TipoDocumentoAlumnoNombre,
+                    opt => opt.MapFrom(src => src.TipoDocumentoAlumno.Nombre));
+
+            CreateMap<CreateAlumnoDocumentoItemRequest, AlumnoDocumento>();
+            CreateMap<UpdateAlumnoDocumentoItemRequest, AlumnoDocumento>();
 
             CreateMap<CreateAlumnoRequest, Alumno>();
             CreateMap<CreateAlumnoNacimientoRequest, AlumnoNacimiento>();
