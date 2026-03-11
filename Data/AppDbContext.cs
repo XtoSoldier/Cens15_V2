@@ -43,12 +43,20 @@ namespace CENS15_V2.Data
                 .HasKey(rp => new { rp.RoleId, rp.PermissionId });
             modelBuilder.Entity<RoleResponsibility>()
                 .HasKey(rr => new { rr.RoleId, rr.ResponsibilityId });
+            modelBuilder.Entity<RoleResponsibility>()
+                .HasOne(rr => rr.Role)
+                .WithMany(r => r.Responsibilities)
+                .HasForeignKey(rr => rr.RoleId);
+            modelBuilder.Entity<RoleResponsibility>()
+                .HasOne(rr => rr.Responsibility)
+                .WithMany(r => r.Roles)
+                .HasForeignKey(rr => rr.ResponsibilityId);
         }
 
         private static void ConfigureClientProduct(ModelBuilder modelBuilder)
         {
             ///Product ↔ Module (1–N)
-                        ///UUID automático en PostgreSQL
+            ///UUID automático en PostgreSQL
             modelBuilder.HasPostgresExtension("pgcrypto");
             modelBuilder.Entity<User>()
                         .Property(u => u.Id)
@@ -65,7 +73,7 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Responsibility>()
                         .Property(r => r.Id)
                         .HasDefaultValueSql("gen_random_uuid()");
-          
+
 
 
 

@@ -28,18 +28,59 @@ namespace CENS15_V2.Controllers
             return role == null ? NotFound() : Ok(role);
         }
 
+        [HttpGet("{id}/responsibilities")]
+        public async Task<IActionResult> GetResponsibilities(Guid id)
+        {
+            var role = await _service.GetByIdAsync(id);
+            if (role == null)
+            {
+                return NotFound();
+            }
+
+            var responsibilities = await _service.GetResponsibilitiesAsync(id);
+            return Ok(responsibilities);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post(CreateRoleRequest request)
         {
-            var created = await _service.CreateAsync(request);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            try
+            {
+                var created = await _service.CreateAsync(request);
+                return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(Guid id, UpdateRoleRequest request)
         {
-            var ok = await _service.UpdateAsync(id, request);
-            return ok ? NoContent() : NotFound();
+            try
+            {
+                var ok = await _service.UpdateAsync(id, request);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{id}/responsibilities")]
+        public async Task<IActionResult> AssignResponsibilities(Guid id, AssignResponsibilitiesRequest request)
+        {
+            try
+            {
+                var ok = await _service.AssignResponsibilitiesAsync(id, request);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
