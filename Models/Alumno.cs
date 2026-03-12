@@ -9,7 +9,7 @@ namespace CENS15_V2.Models
 
         public string NumeroDocumento { get; set; } = string.Empty;
 
-        public DateTime FechaNacimiento { get; set; }
+        public DateOnly FechaNacimiento { get; set; }
 
         public Genero Genero { get; set; }
 
