@@ -100,6 +100,7 @@ namespace CENS15_V2.Data
                 .HasIndex(t => t.Nombre)
                 .IsUnique();
         }
+         
 
         private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
         {
