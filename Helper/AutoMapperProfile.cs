@@ -3,6 +3,7 @@ using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs;
 using CENS15_V2.Models.DTOs.AlumnosDTOs;
 using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
+using CENS15_V2.Models.DTOs.OrientacionesDTOs;
 
 namespace CENS15_V2.Helper
 {
@@ -35,6 +36,7 @@ namespace CENS15_V2.Helper
             CreateMap<UpdateAlumnoDocumentoRequest, AlumnoDocumento>();
 
             CreateMap<TipoDocumentoAlumno, TipoDocumentoAlumnoDto>();
+            CreateMap<Orientacion, OrientacionDto>();
         }
     }
 }

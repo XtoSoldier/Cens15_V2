@@ -21,6 +21,7 @@ namespace CENS15_V2.Data
         public DbSet<AlumnoContacto> AlumnoContactos { get; set; }
         public DbSet<AlumnoDocumento> AlumnoDocumentos { get; set; }
         public DbSet<TipoDocumentoAlumno> TiposDocumentoAlumno { get; set; }
+        public DbSet<Orientacion> Orientaciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -99,8 +100,32 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<TipoDocumentoAlumno>()
                 .HasIndex(t => t.Nombre)
                 .IsUnique();
+
+            modelBuilder.Entity<Orientacion>()
+                .HasIndex(o => o.Nombre)
+                .IsUnique();
+
+            modelBuilder.Entity<Orientacion>()
+                .HasIndex(o => o.NombreCorto)
+                .IsUnique();
         }
          
+
+        private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
+        {
+            modelBuilder.HasPostgresExtension("pgcrypto");
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Id)
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            modelBuilder.Entity<Auth>()
+                .Property(a => a.Id)
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            modelBuilder.Entity<Token>()
+                .Property(t => t.Id)
+                .HasDefaultValueSql("gen_random_uuid()");
 
         private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
         {

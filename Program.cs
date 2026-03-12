@@ -95,6 +95,7 @@ builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
 builder.Services.AddScoped<IAlumnoService, AlumnoService>();
 builder.Services.AddScoped<IAlumnoDocumentoService, AlumnoDocumentoService>();
 builder.Services.AddScoped<ITipoDocumentoAlumnoService, TipoDocumentoAlumnoService>();
+builder.Services.AddScoped<IOrientacionService, OrientacionService>();
 
 var app = builder.Build();
 
