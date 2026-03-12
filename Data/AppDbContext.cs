@@ -95,6 +95,10 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Alumno>()
                 .HasIndex(a => a.NumeroDocumento)
                 .IsUnique();
+
+            modelBuilder.Entity<TipoDocumentoAlumno>()
+                .HasIndex(t => t.Nombre)
+                .IsUnique();
         }
          
 

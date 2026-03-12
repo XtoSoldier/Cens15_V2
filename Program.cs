@@ -94,6 +94,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
 builder.Services.AddScoped<IAlumnoService, AlumnoService>();
 builder.Services.AddScoped<IAlumnoDocumentoService, AlumnoDocumentoService>();
+builder.Services.AddScoped<ITipoDocumentoAlumnoService, TipoDocumentoAlumnoService>();
 
 var app = builder.Build();
 

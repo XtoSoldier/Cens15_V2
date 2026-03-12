@@ -2,6 +2,7 @@ using AutoMapper;
 using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs;
 using CENS15_V2.Models.DTOs.AlumnosDTOs;
+using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
 
 namespace CENS15_V2.Helper
 {
@@ -32,6 +33,8 @@ namespace CENS15_V2.Helper
             CreateMap<UpdateAlumnoNacimientoRequest, AlumnoNacimiento>();
             CreateMap<UpdateAlumnoContactoRequest, AlumnoContacto>();
             CreateMap<UpdateAlumnoDocumentoRequest, AlumnoDocumento>();
+
+            CreateMap<TipoDocumentoAlumno, TipoDocumentoAlumnoDto>();
         }
     }
 }
