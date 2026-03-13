@@ -30,7 +30,6 @@ namespace CENS15_V2.Data
             ConfigureUserAuthToken(modelBuilder);
             ConfigureRoleResponsibility(modelBuilder);
             ConfigureAlumno(modelBuilder);
-            ConfigureDatabaseDefaults(modelBuilder);
         }
 
         private static void ConfigureUserAuthToken(ModelBuilder modelBuilder)
@@ -109,7 +108,7 @@ namespace CENS15_V2.Data
                 .HasIndex(o => o.NombreCorto)
                 .IsUnique();
         }
-         
+
 
         private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
         {
@@ -127,29 +126,7 @@ namespace CENS15_V2.Data
                 .Property(t => t.Id)
                 .HasDefaultValueSql("gen_random_uuid()");
 
-        private static void ConfigureDatabaseDefaults(ModelBuilder modelBuilder)
-        {
-            modelBuilder.HasPostgresExtension("pgcrypto");
 
-            modelBuilder.Entity<User>()
-                .Property(u => u.Id)
-                .HasDefaultValueSql("gen_random_uuid()");
-
-            modelBuilder.Entity<Auth>()
-                .Property(a => a.Id)
-                .HasDefaultValueSql("gen_random_uuid()");
-
-            modelBuilder.Entity<Token>()
-                .Property(t => t.Id)
-                .HasDefaultValueSql("gen_random_uuid()");
-
-            modelBuilder.Entity<Role>()
-                .Property(r => r.Id)
-                .HasDefaultValueSql("gen_random_uuid()");
-
-            modelBuilder.Entity<Responsibility>()
-                .Property(r => r.Id)
-                .HasDefaultValueSql("gen_random_uuid()");
         }
     }
 }
