@@ -1,0 +1,15 @@
+using System.Text.Json.Serialization;
+
+namespace CENS15_V2.Models.DTOs.CursosDTOs
+{
+    public class CreateCursoRequest
+    {
+        public string Curso { get; set; } = string.Empty;
+        public string Division { get; set; } = string.Empty;
+        [JsonPropertyName("id_orientacion")]
+        public int IdOrientacion { get; set; }
+        [JsonPropertyName("id_anexo")]
+        public int IdAnexo { get; set; }
+        public bool Semipresencial { get; set; }
+    }
+}
