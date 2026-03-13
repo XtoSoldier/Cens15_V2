@@ -6,6 +6,7 @@ using CENS15_V2.Models.DTOs.CursosDTOs;
 using CENS15_V2.Models.DTOs.AlumnosDTOs;
 using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
 using CENS15_V2.Models.DTOs.OrientacionesDTOs;
+using CENS15_V2.Models.DTOs.MateriasDTOs;
 
 namespace CENS15_V2.Helper
 {
@@ -40,6 +41,11 @@ namespace CENS15_V2.Helper
             CreateMap<TipoDocumentoAlumno, TipoDocumentoAlumnoDto>();
             CreateMap<Orientacion, OrientacionDto>();
             CreateMap<Anexo, AnexoDto>();
+
+
+            CreateMap<Materia, MateriaDto>()
+                .ForMember(dest => dest.CursoId, opt => opt.MapFrom(src => src.CursoId))
+                .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre));
 
             CreateMap<Curso, CursoDto>()
                 .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.CursoNombre))
