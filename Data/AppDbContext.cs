@@ -24,6 +24,7 @@ namespace CENS15_V2.Data
         public DbSet<Orientacion> Orientaciones { get; set; }
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Anexo> Anexos { get; set; }
+        public DbSet<Materia> Materias { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -108,6 +109,10 @@ namespace CENS15_V2.Data
 
             modelBuilder.Entity<Orientacion>()
                 .HasIndex(o => o.NombreCorto)
+                .IsUnique();
+
+            modelBuilder.Entity<Materia>()
+                .HasIndex(m => new { m.CursoId, m.Nombre })
                 .IsUnique();
         }
          
