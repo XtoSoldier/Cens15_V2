@@ -337,6 +337,40 @@ namespace CENS15_V2.Migrations
                     b.ToTable("CursadasMaterias");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apellidos")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nombres")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Docentes");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
                 {
                     b.Property<int>("Id")
@@ -631,6 +665,16 @@ namespace CENS15_V2.Migrations
                     b.Navigation("CursadaMateria");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
+                {
+                    b.HasOne("CENS15_V2.Entities.User", "User")
+                        .WithOne("Docente")
+                        .HasForeignKey("CENS15_V2.Models.Docente", "UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Anexo", "Anexo")
@@ -714,7 +758,6 @@ namespace CENS15_V2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Docente");
 
                     b.Navigation("Materia");
                 });
@@ -773,7 +816,6 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Auth")
                         .IsRequired();
 
-                    b.Navigation("Docente");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Alumno", b =>
@@ -811,6 +853,18 @@ namespace CENS15_V2.Migrations
                 {
                     b.Navigation("Calificacion")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
+                {
+                    b.Navigation("Materias");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
+                {
+                    b.Navigation("CursadasMaterias");
+
+                    b.Navigation("Docentes");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>
