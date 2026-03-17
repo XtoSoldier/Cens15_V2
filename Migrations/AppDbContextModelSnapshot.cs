@@ -185,6 +185,23 @@ namespace CENS15_V2.Migrations
                     b.ToTable("AlumnoNacimientos");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Anexo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Anexos");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Auth", b =>
                 {
                     b.Property<Guid>("Id")
@@ -201,6 +218,40 @@ namespace CENS15_V2.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Auths");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnexoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CursoNombre")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Division")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrientacionId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Semipresencial")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnexoId");
+
+                    b.HasIndex("OrientacionId");
+
+                    b.ToTable("Cursos");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>
@@ -405,6 +456,25 @@ namespace CENS15_V2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Anexo", "Anexo")
+                        .WithMany("Cursos")
+                        .HasForeignKey("AnexoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CENS15_V2.Models.Orientacion", "Orientacion")
+                        .WithMany("Cursos")
+                        .HasForeignKey("OrientacionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Anexo");
+
+                    b.Navigation("Orientacion");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.RolePermission", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Permission", "Permission")
@@ -471,10 +541,20 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Documentos");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Anexo", b =>
+                {
+                    b.Navigation("Cursos");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Auth", b =>
                 {
                     b.Navigation("Token")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>
+                {
+                    b.Navigation("Cursos");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Responsibility", b =>
