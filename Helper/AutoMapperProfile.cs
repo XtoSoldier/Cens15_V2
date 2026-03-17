@@ -46,6 +46,13 @@ namespace CENS15_V2.Helper
 
             CreateMap<Materia, MateriaDto>()
                 .ForMember(dest => dest.CursoId, opt => opt.MapFrom(src => src.CursoId))
+                .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre))
+                .ForMember(dest => dest.DocenteId, opt => opt.MapFrom(src => src.DocenteId))
+                .ForMember(dest => dest.Docente, opt => opt.MapFrom(src => $"{src.Docente.Apellidos}, {src.Docente.Nombres}"));
+
+
+            CreateMap<Inscripcion, InscripcionDto>()
+                .ForMember(dest => dest.Alumno, opt => opt.MapFrom(src => $"{src.Alumno.Apellidos}, {src.Alumno.Nombres}"))
                 .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre));
 
 
