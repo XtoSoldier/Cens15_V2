@@ -131,6 +131,14 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Inscripcion>()
                 .HasIndex(i => new { i.AlumnoId, i.CursoId, i.Anio })
                 .IsUnique();
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.Estado)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.FechaInscripcion)
+                .HasDefaultValueSql("NOW()");
+
         }
          
     }

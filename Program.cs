@@ -99,6 +99,7 @@ builder.Services.AddScoped<IOrientacionService, OrientacionService>();
 builder.Services.AddScoped<ICursoService, CursoService>();
 builder.Services.AddScoped<IAnexoService, AnexoService>();
 builder.Services.AddScoped<IMateriaService, MateriaService>();
+builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 
 var app = builder.Build();
 

@@ -1,19 +1,16 @@
-namespace CENS15_V2.Models
+using CENS15_V2.Models;
+
+namespace CENS15_V2.Models.DTOs.InscripcionesDTOs
 {
-    public class Inscripcion
+    public class InscripcionDto
     {
         public int Id { get; set; }
-
         public int AlumnoId { get; set; }
-        public Alumno Alumno { get; set; } = null!;
-
+        public string Alumno { get; set; } = string.Empty;
         public int CursoId { get; set; }
-        public Curso Curso { get; set; } = null!;
-
+        public string Curso { get; set; } = string.Empty;
         public int Anio { get; set; }
-
         public DateTime FechaInscripcion { get; set; }
-
         public EstadoInscripcion Estado { get; set; }
     }
 }
