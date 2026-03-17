@@ -27,6 +27,7 @@ namespace CENS15_V2.Data
         public DbSet<Materia> Materias { get; set; }
         public DbSet<Docente> Docentes { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
+        public DbSet<MateriaDocente> MateriaDocentes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -118,11 +119,24 @@ namespace CENS15_V2.Data
                 .IsUnique();
 
 
-            modelBuilder.Entity<Docente>()
-                .HasMany(d => d.Materias)
-                .WithOne(m => m.Docente)
-                .HasForeignKey(m => m.DocenteId)
+            modelBuilder.Entity<MateriaDocente>()
+                .HasKey(md => new { md.MateriaId, md.DocenteId });
+
+            modelBuilder.Entity<MateriaDocente>()
+                .HasOne(md => md.Materia)
+                .WithMany(m => m.Docentes)
+                .HasForeignKey(md => md.MateriaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MateriaDocente>()
+                .HasOne(md => md.Docente)
+                .WithMany(d => d.Materias)
+                .HasForeignKey(md => md.DocenteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MateriaDocente>()
+                .HasIndex(md => new { md.MateriaId, md.Rol })
+                .IsUnique();
 
             modelBuilder.Entity<Docente>()
                 .HasOne(d => d.User)

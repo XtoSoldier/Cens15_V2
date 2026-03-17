@@ -40,13 +40,18 @@ namespace CENS15_V2.Services
         public async Task<MateriaDto> CreateAsync(CreateMateriaRequest request)
         {
             var nombre = request.Nombre.Trim();
-            await ValidateRulesAsync(nombre, request.CursoId, request.DocenteId);
+            var docentes = request.Docentes ?? new List<CreateMateriaDocenteRequest>();
+            await ValidateRulesAsync(nombre, request.CursoId, docentes);
 
             var materia = new Materia
             {
                 Nombre = nombre,
                 CursoId = request.CursoId,
-                DocenteId = request.DocenteId
+                Docentes = docentes.Select(d => new MateriaDocente
+                {
+                    DocenteId = d.DocenteId,
+                    Rol = d.Rol.Trim()
+                }).ToList()
             };
 
             _context.Materias.Add(materia);
@@ -61,18 +66,28 @@ namespace CENS15_V2.Services
 
         public async Task<bool> UpdateAsync(int id, UpdateMateriaRequest request)
         {
-            var materia = await _context.Materias.FirstOrDefaultAsync(m => m.Id == id);
+            var materia = await _context.Materias
+                .Include(m => m.Docentes)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (materia == null)
             {
                 return false;
             }
 
             var nombre = request.Nombre.Trim();
-            await ValidateRulesAsync(nombre, request.CursoId, request.DocenteId, id);
+            var docentes = request.Docentes ?? new List<CreateMateriaDocenteRequest>();
+            await ValidateRulesAsync(nombre, request.CursoId, docentes, id);
 
             materia.Nombre = nombre;
             materia.CursoId = request.CursoId;
-            materia.DocenteId = request.DocenteId;
+
+            _context.RemoveRange(materia.Docentes);
+            materia.Docentes = docentes.Select(d => new MateriaDocente
+            {
+                MateriaId = materia.Id,
+                DocenteId = d.DocenteId,
+                Rol = d.Rol.Trim()
+            }).ToList();
 
             await _context.SaveChangesAsync();
             return true;
@@ -95,10 +110,11 @@ namespace CENS15_V2.Services
         {
             return _context.Materias
                 .Include(m => m.Curso)
-                .Include(m => m.Docente);
+                .Include(m => m.Docentes)
+                    .ThenInclude(md => md.Docente);
         }
 
-        private async Task ValidateRulesAsync(string nombre, int cursoId, int docenteId, int? id = null)
+        private async Task ValidateRulesAsync(string nombre, int cursoId, List<CreateMateriaDocenteRequest> docentes, int? id = null)
         {
             if (string.IsNullOrWhiteSpace(nombre))
             {
@@ -111,10 +127,33 @@ namespace CENS15_V2.Services
                 throw new InvalidOperationException("El curso indicado no existe.");
             }
 
-            var docenteExists = await _context.Docentes.AnyAsync(d => d.Id == docenteId);
-            if (!docenteExists)
+            if (docentes == null || docentes.Count == 0)
             {
-                throw new InvalidOperationException("El docente indicado no existe.");
+                return;
+            }
+
+            var docentesIds = docentes.Select(d => d.DocenteId).ToList();
+            if (docentesIds.Distinct().Count() != docentesIds.Count)
+            {
+                throw new InvalidOperationException("No se puede repetir un docente en la misma materia.");
+            }
+
+            var roles = docentes.Select(d => d.Rol.Trim()).ToList();
+            if (roles.Any(string.IsNullOrWhiteSpace))
+            {
+                throw new InvalidOperationException("El rol del docente en la materia es obligatorio.");
+            }
+
+            if (roles.Distinct(StringComparer.OrdinalIgnoreCase).Count() != roles.Count)
+            {
+                throw new InvalidOperationException("No se puede repetir el rol dentro de una misma materia.");
+            }
+
+            var docentesExistentes = await _context.Docentes
+                .CountAsync(d => docentesIds.Contains(d.Id));
+            if (docentesExistentes != docentesIds.Count)
+            {
+                throw new InvalidOperationException("Uno o más docentes indicados no existen.");
             }
 
             var duplicada = await _context.Materias.AnyAsync(m =>

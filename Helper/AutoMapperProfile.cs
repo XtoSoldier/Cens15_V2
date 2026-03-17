@@ -8,6 +8,7 @@ using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
 using CENS15_V2.Models.DTOs.OrientacionesDTOs;
 using CENS15_V2.Models.DTOs.MateriasDTOs;
 using CENS15_V2.Models.DTOs.InscripcionesDTOs;
+using CENS15_V2.Models.DTOs.DocentesDTOs;
 
 namespace CENS15_V2.Helper
 {
@@ -42,19 +43,16 @@ namespace CENS15_V2.Helper
             CreateMap<TipoDocumentoAlumno, TipoDocumentoAlumnoDto>();
             CreateMap<Orientacion, OrientacionDto>();
             CreateMap<Anexo, AnexoDto>();
+            CreateMap<Docente, DocenteDto>();
 
+            CreateMap<MateriaDocente, MateriaDocenteDto>()
+                .ForMember(dest => dest.DocenteId, opt => opt.MapFrom(src => src.DocenteId))
+                .ForMember(dest => dest.Docente, opt => opt.MapFrom(src => $"{src.Docente.Apellidos}, {src.Docente.Nombres}"));
 
             CreateMap<Materia, MateriaDto>()
                 .ForMember(dest => dest.CursoId, opt => opt.MapFrom(src => src.CursoId))
                 .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre))
-                .ForMember(dest => dest.DocenteId, opt => opt.MapFrom(src => src.DocenteId))
-                .ForMember(dest => dest.Docente, opt => opt.MapFrom(src => $"{src.Docente.Apellidos}, {src.Docente.Nombres}"));
-
-
-            CreateMap<Inscripcion, InscripcionDto>()
-                .ForMember(dest => dest.Alumno, opt => opt.MapFrom(src => $"{src.Alumno.Apellidos}, {src.Alumno.Nombres}"))
-                .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre));
-
+                .ForMember(dest => dest.Docentes, opt => opt.MapFrom(src => src.Docentes));
 
             CreateMap<Inscripcion, InscripcionDto>()
                 .ForMember(dest => dest.Alumno, opt => opt.MapFrom(src => $"{src.Alumno.Apellidos}, {src.Alumno.Nombres}"))
