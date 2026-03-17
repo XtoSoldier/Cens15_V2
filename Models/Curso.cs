@@ -11,5 +11,6 @@ namespace CENS15_V2.Models
 
         public Orientacion Orientacion { get; set; } = null!;
         public Anexo Anexo { get; set; } = null!;
+        public ICollection<Materia> Materias { get; set; } = new List<Materia>();
     }
 }
