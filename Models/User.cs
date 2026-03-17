@@ -15,5 +15,6 @@ namespace CENS15_V2.Entities
         public Role Role { get; set; }
 
         public Auth Auth { get; set; }
+        public Docente? Docente { get; set; }
     }
 }

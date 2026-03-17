@@ -25,6 +25,8 @@ namespace CENS15_V2.Data
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Anexo> Anexos { get; set; }
         public DbSet<Materia> Materias { get; set; }
+        public DbSet<Docente> Docentes { get; set; }
+        public DbSet<Inscripcion> Inscripciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -114,6 +116,51 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Materia>()
                 .HasIndex(m => new { m.CursoId, m.Nombre })
                 .IsUnique();
+
+
+            modelBuilder.Entity<Docente>()
+                .HasMany(d => d.Materias)
+                .WithOne(m => m.Docente)
+                .HasForeignKey(m => m.DocenteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Docente>()
+                .HasOne(d => d.User)
+                .WithOne(u => u.Docente)
+                .HasForeignKey<Docente>(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Docente>()
+                .HasIndex(d => d.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<Docente>()
+                .HasIndex(d => d.UserId)
+                .IsUnique();
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasOne(i => i.Alumno)
+                .WithMany(a => a.Inscripciones)
+                .HasForeignKey(i => i.AlumnoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasOne(i => i.Curso)
+                .WithMany(c => c.Inscripciones)
+                .HasForeignKey(i => i.CursoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasIndex(i => new { i.AlumnoId, i.CursoId, i.Anio })
+                .IsUnique();
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.Estado)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.FechaInscripcion)
+                .HasDefaultValueSql("NOW()");
+
         }
          
     }

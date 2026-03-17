@@ -40,12 +40,13 @@ namespace CENS15_V2.Services
         public async Task<MateriaDto> CreateAsync(CreateMateriaRequest request)
         {
             var nombre = request.Nombre.Trim();
-            await ValidateRulesAsync(nombre, request.CursoId);
+            await ValidateRulesAsync(nombre, request.CursoId, request.DocenteId);
 
             var materia = new Materia
             {
                 Nombre = nombre,
-                CursoId = request.CursoId
+                CursoId = request.CursoId,
+                DocenteId = request.DocenteId
             };
 
             _context.Materias.Add(materia);
@@ -67,10 +68,11 @@ namespace CENS15_V2.Services
             }
 
             var nombre = request.Nombre.Trim();
-            await ValidateRulesAsync(nombre, request.CursoId, id);
+            await ValidateRulesAsync(nombre, request.CursoId, request.DocenteId, id);
 
             materia.Nombre = nombre;
             materia.CursoId = request.CursoId;
+            materia.DocenteId = request.DocenteId;
 
             await _context.SaveChangesAsync();
             return true;
@@ -92,10 +94,11 @@ namespace CENS15_V2.Services
         private IQueryable<Materia> QueryMaterias()
         {
             return _context.Materias
-                .Include(m => m.Curso);
+                .Include(m => m.Curso)
+                .Include(m => m.Docente);
         }
 
-        private async Task ValidateRulesAsync(string nombre, int cursoId, int? id = null)
+        private async Task ValidateRulesAsync(string nombre, int cursoId, int docenteId, int? id = null)
         {
             if (string.IsNullOrWhiteSpace(nombre))
             {
@@ -106,6 +109,12 @@ namespace CENS15_V2.Services
             if (!cursoExists)
             {
                 throw new InvalidOperationException("El curso indicado no existe.");
+            }
+
+            var docenteExists = await _context.Docentes.AnyAsync(d => d.Id == docenteId);
+            if (!docenteExists)
+            {
+                throw new InvalidOperationException("El docente indicado no existe.");
             }
 
             var duplicada = await _context.Materias.AnyAsync(m =>
