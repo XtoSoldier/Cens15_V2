@@ -650,6 +650,25 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Orientacion");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Inscripcion", "Inscripcion")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("InscripcionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CENS15_V2.Models.Materia", "Materia")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("MateriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inscripcion");
+
+                    b.Navigation("Materia");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Alumno", "Alumno")
@@ -668,7 +687,6 @@ namespace CENS15_V2.Migrations
 
                     b.Navigation("Curso");
 
-                    b.Navigation("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
@@ -789,9 +807,10 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Materias");
                 });
 
-            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
                 {
-                    b.Navigation("Materias");
+                    b.Navigation("Calificacion")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>
