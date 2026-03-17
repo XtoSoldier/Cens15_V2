@@ -20,5 +20,6 @@ namespace CENS15_V2.Models
         public AlumnoContacto Contacto { get; set; } = null!;
 
         public ICollection<AlumnoDocumento> Documentos { get; set; } = new List<AlumnoDocumento>();
+        public ICollection<Inscripcion> Inscripciones { get; set; } = new List<Inscripcion>();
     }
 }
