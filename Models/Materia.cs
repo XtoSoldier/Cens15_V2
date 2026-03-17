@@ -8,5 +8,6 @@ namespace CENS15_V2.Models
 
         public Curso Curso { get; set; } = null!;
         public ICollection<MateriaDocente> Docentes { get; set; } = new List<MateriaDocente>();
+        public ICollection<CursadaMateria> CursadasMaterias { get; set; } = new List<CursadaMateria>();
     }
 }

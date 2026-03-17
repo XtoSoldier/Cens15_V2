@@ -220,6 +220,65 @@ namespace CENS15_V2.Migrations
                     b.ToTable("Auths");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Calificacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("C1Nota1")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C1Nota2")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C1Nota3")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C1Promedio")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C2Nota1")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C2Nota2")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C2Nota3")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("C2Promedio")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("CalificacionFinal")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("CursadaMateriaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("PromedioAnual")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("RecuperacionDiciembre")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("RecuperacionMarzo")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursadaMateriaId")
+                        .IsUnique();
+
+                    b.ToTable("Calificaciones");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
                 {
                     b.Property<int>("Id")
@@ -252,6 +311,30 @@ namespace CENS15_V2.Migrations
                     b.HasIndex("OrientacionId");
 
                     b.ToTable("Cursos");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("InscripcionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MateriaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InscripcionId", "MateriaId")
+                        .IsUnique();
+
+                    b.HasIndex("MateriaId");
+
+                    b.ToTable("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
@@ -509,6 +592,17 @@ namespace CENS15_V2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Calificacion", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.CursadaMateria", "CursadaMateria")
+                        .WithOne("Calificacion")
+                        .HasForeignKey("CENS15_V2.Models.Calificacion", "CursadaMateriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CursadaMateria");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Anexo", "Anexo")
@@ -528,6 +622,25 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Orientacion");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Inscripcion", "Inscripcion")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("InscripcionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CENS15_V2.Models.Materia", "Materia")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("MateriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inscripcion");
+
+                    b.Navigation("Materia");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Alumno", "Alumno")
@@ -545,6 +658,8 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Alumno");
 
                     b.Navigation("Curso");
+
+                    b.Navigation("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
@@ -642,6 +757,17 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Inscripciones");
 
                     b.Navigation("Materias");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.Navigation("Calificacion")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
+                {
+                    b.Navigation("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>

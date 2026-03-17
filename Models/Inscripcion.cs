@@ -15,5 +15,7 @@ namespace CENS15_V2.Models
         public DateTime FechaInscripcion { get; set; }
 
         public EstadoInscripcion Estado { get; set; }
+
+        public ICollection<CursadaMateria> CursadasMaterias { get; set; } = new List<CursadaMateria>();
     }
 }
