@@ -25,6 +25,7 @@ namespace CENS15_V2.Data
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Anexo> Anexos { get; set; }
         public DbSet<Materia> Materias { get; set; }
+        public DbSet<Inscripcion> Inscripciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -114,6 +115,30 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Materia>()
                 .HasIndex(m => new { m.CursoId, m.Nombre })
                 .IsUnique();
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasOne(i => i.Alumno)
+                .WithMany(a => a.Inscripciones)
+                .HasForeignKey(i => i.AlumnoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasOne(i => i.Curso)
+                .WithMany(c => c.Inscripciones)
+                .HasForeignKey(i => i.CursoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasIndex(i => new { i.AlumnoId, i.CursoId, i.Anio })
+                .IsUnique();
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.Estado)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.FechaInscripcion)
+                .HasDefaultValueSql("NOW()");
+
         }
          
     }
