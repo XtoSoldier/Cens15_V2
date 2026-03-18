@@ -262,6 +262,12 @@ namespace CENS15_V2.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("MateriaNombre")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
                     b.Property<decimal?>("PromedioAnual")
                         .HasColumnType("numeric");
 
@@ -277,30 +283,6 @@ namespace CENS15_V2.Migrations
                         .IsUnique();
 
                     b.ToTable("Calificaciones");
-                });
-
-            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("InscripcionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MateriaId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MateriaId");
-
-                    b.HasIndex("InscripcionId", "MateriaId")
-                        .IsUnique();
-
-                    b.ToTable("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
@@ -335,6 +317,36 @@ namespace CENS15_V2.Migrations
                     b.HasIndex("OrientacionId");
 
                     b.ToTable("Cursos");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("InscripcionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MateriaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MateriaNombre")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InscripcionId", "MateriaId")
+                        .IsUnique();
+
+                    b.HasIndex("MateriaId");
+
+                    b.ToTable("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
@@ -388,9 +400,17 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("CursoId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Estado")
+                    b.Property<string>("CursoNombre")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("Division")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
 
                     b.Property<DateTime>("FechaInscripcion")
                         .ValueGeneratedOnAdd()
@@ -665,23 +685,14 @@ namespace CENS15_V2.Migrations
                     b.Navigation("CursadaMateria");
                 });
 
-            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
                 {
-                    b.HasOne("CENS15_V2.Models.Inscripcion", "Inscripcion")
-                        .WithMany("CursadasMaterias")
-                        .HasForeignKey("InscripcionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("CENS15_V2.Entities.User", "User")
+                        .WithOne("Docente")
+                        .HasForeignKey("CENS15_V2.Models.Docente", "UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("CENS15_V2.Models.Materia", "Materia")
-                        .WithMany("CursadasMaterias")
-                        .HasForeignKey("MateriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inscripcion");
-
-                    b.Navigation("Materia");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
@@ -703,14 +714,23 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Orientacion");
                 });
 
-            modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
                 {
-                    b.HasOne("CENS15_V2.Entities.User", "User")
-                        .WithOne("Docente")
-                        .HasForeignKey("CENS15_V2.Models.Docente", "UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                    b.HasOne("CENS15_V2.Models.Inscripcion", "Inscripcion")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("InscripcionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.HasOne("CENS15_V2.Models.Materia", "Materia")
+                        .WithMany("CursadasMaterias")
+                        .HasForeignKey("MateriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Inscripcion");
+
+                    b.Navigation("Materia");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
@@ -730,6 +750,7 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Alumno");
 
                     b.Navigation("Curso");
+
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
@@ -757,7 +778,6 @@ namespace CENS15_V2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Docente");
 
                     b.Navigation("Materia");
                 });
@@ -816,7 +836,6 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Auth")
                         .IsRequired();
 
-                    b.Navigation("Docente");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Alumno", b =>
@@ -843,12 +862,6 @@ namespace CENS15_V2.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
-                {
-                    b.Navigation("Calificacion")
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("CENS15_V2.Models.Curso", b =>
                 {
                     b.Navigation("Inscripciones");
@@ -856,14 +869,15 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Materias");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.CursadaMateria", b =>
+                {
+                    b.Navigation("Calificacion")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
                 {
                     b.Navigation("Materias");
-                });
-
-            modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
-                {
-                    b.Navigation("CursadasMaterias");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
