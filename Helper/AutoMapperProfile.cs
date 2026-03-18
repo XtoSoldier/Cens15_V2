@@ -9,6 +9,8 @@ using CENS15_V2.Models.DTOs.OrientacionesDTOs;
 using CENS15_V2.Models.DTOs.MateriasDTOs;
 using CENS15_V2.Models.DTOs.InscripcionesDTOs;
 using CENS15_V2.Models.DTOs.DocentesDTOs;
+using CENS15_V2.Models.DTOs.CursadasMateriasDTOs;
+using CENS15_V2.Models.DTOs.CalificacionesDTOs;
 
 namespace CENS15_V2.Helper
 {
@@ -56,7 +58,12 @@ namespace CENS15_V2.Helper
 
             CreateMap<Inscripcion, InscripcionDto>()
                 .ForMember(dest => dest.Alumno, opt => opt.MapFrom(src => $"{src.Alumno.Apellidos}, {src.Alumno.Nombres}"))
-                .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre));
+                .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => $"{src.CursoNombre} {src.Division}".Trim()))
+                .ForMember(dest => dest.CursoNombre, opt => opt.MapFrom(src => src.CursoNombre))
+                .ForMember(dest => dest.Division, opt => opt.MapFrom(src => src.Division));
+
+            CreateMap<CursadaMateria, CursadaMateriaDto>();
+            CreateMap<Calificacion, CalificacionDto>();
 
             CreateMap<Curso, CursoDto>()
                 .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.CursoNombre))

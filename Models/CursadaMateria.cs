@@ -10,6 +10,8 @@ namespace CENS15_V2.Models
         public int MateriaId { get; set; }
         public Materia Materia { get; set; } = null!;
 
+        public string MateriaNombre { get; set; } = string.Empty;
+
         public Calificacion Calificacion { get; set; } = null!;
     }
 }

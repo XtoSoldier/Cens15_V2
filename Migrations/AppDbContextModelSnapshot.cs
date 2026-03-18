@@ -262,6 +262,12 @@ namespace CENS15_V2.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("MateriaNombre")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
                     b.Property<decimal?>("PromedioAnual")
                         .HasColumnType("numeric");
 
@@ -327,6 +333,12 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("MateriaId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("MateriaNombre")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InscripcionId", "MateriaId")
@@ -388,9 +400,17 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("CursoId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Estado")
+                    b.Property<string>("CursoNombre")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("Division")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("");
 
                     b.Property<DateTime>("FechaInscripcion")
                         .ValueGeneratedOnAdd()

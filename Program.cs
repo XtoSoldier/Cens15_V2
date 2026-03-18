@@ -101,6 +101,8 @@ builder.Services.AddScoped<IAnexoService, AnexoService>();
 builder.Services.AddScoped<IMateriaService, MateriaService>();
 builder.Services.AddScoped<IDocenteService, DocenteService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
+builder.Services.AddScoped<ICursadaMateriaService, CursadaMateriaService>();
+builder.Services.AddScoped<ICalificacionService, CalificacionService>();
 
 var app = builder.Build();
 

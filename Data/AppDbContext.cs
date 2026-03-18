@@ -207,6 +207,22 @@ namespace CENS15_V2.Data
                 .Property(c => c.Estado)
                 .HasConversion<string>();
 
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.CursoNombre)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.Division)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<CursadaMateria>()
+                .Property(cm => cm.MateriaNombre)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.MateriaNombre)
+                .HasDefaultValue(string.Empty);
+
         }
          
     }
