@@ -29,6 +29,21 @@ namespace CENS15_V2.Controllers
             }
         }
 
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Put(int id, UpdateInscripcionRequest request)
+        {
+            try
+            {
+                var ok = await _service.UpdateAsync(id, request);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {

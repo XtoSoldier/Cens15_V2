@@ -28,6 +28,8 @@ namespace CENS15_V2.Data
         public DbSet<Docente> Docentes { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
         public DbSet<MateriaDocente> MateriaDocentes { get; set; }
+        public DbSet<CursadaMateria> CursadasMaterias { get; set; }
+        public DbSet<Calificacion> Calificaciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -174,6 +176,52 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Inscripcion>()
                 .Property(i => i.FechaInscripcion)
                 .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<CursadaMateria>()
+                .HasOne(cm => cm.Inscripcion)
+                .WithMany(i => i.CursadasMaterias)
+                .HasForeignKey(cm => cm.InscripcionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CursadaMateria>()
+                .HasOne(cm => cm.Materia)
+                .WithMany(m => m.CursadasMaterias)
+                .HasForeignKey(cm => cm.MateriaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CursadaMateria>()
+                .HasIndex(cm => new { cm.InscripcionId, cm.MateriaId })
+                .IsUnique();
+
+            modelBuilder.Entity<Calificacion>()
+                .HasOne(c => c.CursadaMateria)
+                .WithOne(cm => cm.Calificacion)
+                .HasForeignKey<Calificacion>(c => c.CursadaMateriaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Calificacion>()
+                .HasIndex(c => c.CursadaMateriaId)
+                .IsUnique();
+
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.Estado)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.CursoNombre)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<Inscripcion>()
+                .Property(i => i.Division)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<CursadaMateria>()
+                .Property(cm => cm.MateriaNombre)
+                .HasDefaultValue(string.Empty);
+
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.MateriaNombre)
+                .HasDefaultValue(string.Empty);
 
         }
          
