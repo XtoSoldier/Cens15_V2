@@ -1,11 +1,22 @@
-﻿namespace CENS15_V2.Models.DTOs.AuthDTOs
+using System.ComponentModel.DataAnnotations;
+
+namespace CENS15_V2.Models.DTOs.AuthDTOs
 {
     public class RegisterRequest
     {
-        public string Apellido { get; set; }
-        public string Nombres { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string? Image {  get; set; }
+        [Required]
+        public string Apellido { get; set; } = string.Empty;
+
+        [Required]
+        public string Nombres { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+
+        public string? Image { get; set; }
     }
 }
