@@ -22,7 +22,7 @@ namespace CENS15_V2.Controllers
             if (result == null) return Unauthorized("Invalid Credentials");
             return Ok(result);
         }
-        [Authorize]
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequest request)
         {

@@ -1,9 +1,11 @@
 using CENS15_V2.Models.DTOs.DocentesDTOs;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class DocentesController : ControllerBase
