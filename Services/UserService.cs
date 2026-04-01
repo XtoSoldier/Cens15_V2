@@ -1,6 +1,7 @@
 ﻿using CENS15_V2.Data;
 using CENS15_V2.Entities;
 using CENS15_V2.Services.Interfaces;
+using CENS15_V2.Models.DTOs.UsersDTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace CENS15_V2.Services
@@ -13,10 +14,21 @@ namespace CENS15_V2.Services
         {
             _context = context;
         }
-        public async Task<IEnumerable<User>> GetAllAsync()
+        public async Task<IEnumerable<UserDTO>> GetAllAsync()
         {
             return await _context.Users
                 .AsNoTracking()
+                .Select(u => new UserDTO
+                {
+                    Id = u.Id,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Image = u.Image,
+                    Status = u.Status,
+                    RoleId = u.RoleId,
+                    Role = u.Role != null ? u.Role.Name : null,
+                    Email = u.Auth != null ? u.Auth.Email : null
+                })
                 .ToListAsync();
         }
 
