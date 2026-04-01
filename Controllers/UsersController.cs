@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CENS15_V2.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : Controller
