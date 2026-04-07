@@ -20,7 +20,7 @@ namespace CENS15_V2.Services
 
         public async Task<IEnumerable<DocenteDto>> GetAllAsync()
         {
-            var items = await _context.Docentes
+            var items = await QueryDocentes()
                 .AsNoTracking()
                 .OrderBy(d => d.Apellidos)
                 .ThenBy(d => d.Nombres)
@@ -31,11 +31,19 @@ namespace CENS15_V2.Services
 
         public async Task<DocenteDto?> GetByIdAsync(int id)
         {
-            var item = await _context.Docentes
+            var item = await QueryDocentes()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             return item == null ? null : _mapper.Map<DocenteDto>(item);
+        }
+
+        private IQueryable<Docente> QueryDocentes()
+        {
+            return _context.Docentes
+                .Include(d => d.Materias)
+                    .ThenInclude(dm => dm.Materia)
+                        .ThenInclude(m => m.Curso);
         }
 
         public async Task<DocenteDto> CreateAsync(CreateDocenteRequest request)
