@@ -73,6 +73,26 @@ namespace CENS15_V2.Services
             return true;
         }
 
+
+        public async Task<bool> UpdateEmailAsync(Guid id, UpdateUserEmailRequest request)
+        {
+            var auth = await _context.Auths.FindAsync(id);
+            if (auth == null) return false;
+
+            var normalizedEmail = request.Email.Trim();
+            var emailExists = await _context.Auths.AnyAsync(a =>
+                a.Id != id && a.Email.ToLower() == normalizedEmail.ToLower());
+
+            if (emailExists)
+            {
+                throw new InvalidOperationException("El email ya existe");
+            }
+
+            auth.Email = normalizedEmail;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var user = await _context.Users
