@@ -9,6 +9,7 @@ namespace CENS15_V2.Services.Interfaces
         Task<UserDTO> CreateAsync(CreateUserRequest request);
         Task<bool> UpdateAsync(Guid id, UpdateUserRequest request);
         Task<bool> UpdateStatusAsync(Guid id, UpdateUserStatusRequest request);
+        Task<bool> UpdateEmailAsync(Guid id, UpdateUserEmailRequest request);
         Task<bool> DeleteAsync(Guid id);
     }
 }
