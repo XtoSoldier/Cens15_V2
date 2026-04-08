@@ -51,6 +51,21 @@ namespace CENS15_V2.Controllers
             return ok ? NoContent() : NotFound();
         }
 
+
+        [HttpPatch("{id}/email")]
+        public async Task<IActionResult> PatchEmail(Guid id, UpdateUserEmailRequest request)
+        {
+            try
+            {
+                var ok = await _service.UpdateEmailAsync(id, request);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
