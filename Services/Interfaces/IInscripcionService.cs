@@ -12,5 +12,6 @@ namespace CENS15_V2.Services.Interfaces
         Task<bool> UpdateAsync(int id, UpdateInscripcionRequest request);
         Task<bool> AnularAsync(int id);
         Task<bool> UpdateEstadoAsync(int id, EstadoInscripcion estado);
+        Task<bool> DeleteAsync(int id);
     }
 }

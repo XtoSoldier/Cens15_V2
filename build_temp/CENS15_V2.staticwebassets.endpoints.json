@@ -1,0 +1,826 @@
+{
+  "Version": 1,
+  "ManifestType": "Build",
+  "Endpoints": [
+    {
+      "Route": "uploads/alumno-documentos/1bfb45df27f143b59ec3bef4d0a0e8f1.jpg",
+      "AssetFile": "uploads/alumno-documentos/1bfb45df27f143b59ec3bef4d0a0e8f1.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "20068"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:23:33 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/1bfb45df27f143b59ec3bef4d0a0e8f1.ymw05p5t98.jpg",
+      "AssetFile": "uploads/alumno-documentos/1bfb45df27f143b59ec3bef4d0a0e8f1.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "20068"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:23:33 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ymw05p5t98"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/1bfb45df27f143b59ec3bef4d0a0e8f1.jpg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/28b22fc962094ec39f542964921de4ee.jpeg",
+      "AssetFile": "uploads/alumno-documentos/28b22fc962094ec39f542964921de4ee.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:43:01 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/28b22fc962094ec39f542964921de4ee.l56ykka4i4.jpeg",
+      "AssetFile": "uploads/alumno-documentos/28b22fc962094ec39f542964921de4ee.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:43:01 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "l56ykka4i4"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/28b22fc962094ec39f542964921de4ee.jpeg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/73eb803949144c1cb8dfb5e5e71727e8.pdf",
+      "AssetFile": "uploads/alumno-documentos/73eb803949144c1cb8dfb5e5e71727e8.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:43:01 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/73eb803949144c1cb8dfb5e5e71727e8.yl852vmgz8.pdf",
+      "AssetFile": "uploads/alumno-documentos/73eb803949144c1cb8dfb5e5e71727e8.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:43:01 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yl852vmgz8"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/73eb803949144c1cb8dfb5e5e71727e8.pdf"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/79787af9297a4ded9266fcf594596e8c.jpeg",
+      "AssetFile": "uploads/alumno-documentos/79787af9297a4ded9266fcf594596e8c.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:59:10 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/79787af9297a4ded9266fcf594596e8c.l56ykka4i4.jpeg",
+      "AssetFile": "uploads/alumno-documentos/79787af9297a4ded9266fcf594596e8c.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:59:10 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "l56ykka4i4"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/79787af9297a4ded9266fcf594596e8c.jpeg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/7f78ab4fdc204af9804cc07b76acf381.jpg",
+      "AssetFile": "uploads/alumno-documentos/7f78ab4fdc204af9804cc07b76acf381.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "20068"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:23:04 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/7f78ab4fdc204af9804cc07b76acf381.ymw05p5t98.jpg",
+      "AssetFile": "uploads/alumno-documentos/7f78ab4fdc204af9804cc07b76acf381.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "20068"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:23:04 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "ymw05p5t98"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-Ol58bQbJNQRvhf9nX0BK4nXfhPTW4GgR2iBpO9JF6tg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/7f78ab4fdc204af9804cc07b76acf381.jpg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/83e6248c81bf4530abbadbd3eb30060b.1slldz6tb0.jpg",
+      "AssetFile": "uploads/alumno-documentos/83e6248c81bf4530abbadbd3eb30060b.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "139933"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"f2W82IEw65KvVgWXqtwabRDNalwtrsB9wegbCOUO06A=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:32:40 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "1slldz6tb0"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-f2W82IEw65KvVgWXqtwabRDNalwtrsB9wegbCOUO06A="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/83e6248c81bf4530abbadbd3eb30060b.jpg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/83e6248c81bf4530abbadbd3eb30060b.jpg",
+      "AssetFile": "uploads/alumno-documentos/83e6248c81bf4530abbadbd3eb30060b.jpg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "139933"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"f2W82IEw65KvVgWXqtwabRDNalwtrsB9wegbCOUO06A=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:32:40 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-f2W82IEw65KvVgWXqtwabRDNalwtrsB9wegbCOUO06A="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/8a531b3197244bf297f2a7d056dfaa2d.jpeg",
+      "AssetFile": "uploads/alumno-documentos/8a531b3197244bf297f2a7d056dfaa2d.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:37:23 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/8a531b3197244bf297f2a7d056dfaa2d.l56ykka4i4.jpeg",
+      "AssetFile": "uploads/alumno-documentos/8a531b3197244bf297f2a7d056dfaa2d.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:37:23 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "l56ykka4i4"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/8a531b3197244bf297f2a7d056dfaa2d.jpeg"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/b3129ca323bb481d92e1cc6b768c10e6.pdf",
+      "AssetFile": "uploads/alumno-documentos/b3129ca323bb481d92e1cc6b768c10e6.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:37:23 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/b3129ca323bb481d92e1cc6b768c10e6.yl852vmgz8.pdf",
+      "AssetFile": "uploads/alumno-documentos/b3129ca323bb481d92e1cc6b768c10e6.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 00:37:23 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yl852vmgz8"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/b3129ca323bb481d92e1cc6b768c10e6.pdf"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/cd94ef062491445b9f92116be44f1d4b.pdf",
+      "AssetFile": "uploads/alumno-documentos/cd94ef062491445b9f92116be44f1d4b.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:21:22 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/cd94ef062491445b9f92116be44f1d4b.yl852vmgz8.pdf",
+      "AssetFile": "uploads/alumno-documentos/cd94ef062491445b9f92116be44f1d4b.pdf",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "353297"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "application/pdf"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:21:22 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "yl852vmgz8"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-1jgjFyQ12Lpz42u0DG8baQy166z8FPQLl6VGYXfHj1k="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/cd94ef062491445b9f92116be44f1d4b.pdf"
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/e50320d35a4c49fb82a80a895ef74023.jpeg",
+      "AssetFile": "uploads/alumno-documentos/e50320d35a4c49fb82a80a895ef74023.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=3600, must-revalidate"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:21:17 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        }
+      ]
+    },
+    {
+      "Route": "uploads/alumno-documentos/e50320d35a4c49fb82a80a895ef74023.l56ykka4i4.jpeg",
+      "AssetFile": "uploads/alumno-documentos/e50320d35a4c49fb82a80a895ef74023.jpeg",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "40176"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "image/jpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 09 Jun 2026 01:21:17 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "l56ykka4i4"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-V6gARovIQzX2Ba8AMWGYnSHqF53BdCofUj8SgcOoIKg="
+        },
+        {
+          "Name": "label",
+          "Value": "uploads/alumno-documentos/e50320d35a4c49fb82a80a895ef74023.jpeg"
+        }
+      ]
+    }
+  ]
+}

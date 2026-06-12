@@ -53,7 +53,8 @@ namespace CENS15.V2.Services
                 Token = tokenString,
                 Expiration = expiration,
                 Name = auth.User.FirstName,
-                Role = auth.User.Role.Name
+                Role = auth.User.Role.Name,
+                UserId = auth.User.Id.ToString()
             };
         }
     }

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class DocentesController : ControllerBase
@@ -63,6 +63,19 @@ namespace CENS15_V2.Controllers
         {
             var ok = await _service.DeleteAsync(id);
             return ok ? NoContent() : NotFound();
+        }
+
+        [HttpGet("por-usuario/{userId:guid}")]
+        public async Task<IActionResult> GetByUserId(Guid userId)
+        {
+            var item = await _service.GetByUserIdAsync(userId);
+            return item == null ? NotFound() : Ok(item);
+        }
+
+        [HttpGet("{id:int}/alumnos-para-calificar")]
+        public async Task<IActionResult> GetAlumnosParaCalificar(int id)
+        {
+            return Ok(await _service.GetMateriasConAlumnosAsync(id));
         }
     }
 }

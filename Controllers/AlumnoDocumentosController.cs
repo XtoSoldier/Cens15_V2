@@ -43,6 +43,13 @@ namespace CENS15_V2.Controllers
             }
         }
 
+        [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> PostUpload([FromForm] CreateAlumnoDocumentoItemRequest request)
+        {
+            return await Post(request);
+        }
+
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Put(int id, UpdateAlumnoDocumentoItemRequest request)
         {
@@ -55,6 +62,13 @@ namespace CENS15_V2.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPut("{id:int}/upload")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> PutUpload(int id, [FromForm] UpdateAlumnoDocumentoItemRequest request)
+        {
+            return await Put(id, request);
         }
 
         [HttpDelete("{id:int}")]

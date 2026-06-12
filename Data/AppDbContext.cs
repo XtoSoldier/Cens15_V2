@@ -30,6 +30,7 @@ namespace CENS15_V2.Data
         public DbSet<MateriaDocente> MateriaDocentes { get; set; }
         public DbSet<CursadaMateria> CursadasMaterias { get; set; }
         public DbSet<Calificacion> Calificaciones { get; set; }
+        public DbSet<CertificadoTemplate> CertificadoTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -207,14 +208,6 @@ namespace CENS15_V2.Data
                 .Property(c => c.Estado)
                 .HasConversion<string>();
 
-            modelBuilder.Entity<Inscripcion>()
-                .Property(i => i.CursoNombre)
-                .HasDefaultValue(string.Empty);
-
-            modelBuilder.Entity<Inscripcion>()
-                .Property(i => i.Division)
-                .HasDefaultValue(string.Empty);
-
             modelBuilder.Entity<CursadaMateria>()
                 .Property(cm => cm.MateriaNombre)
                 .HasDefaultValue(string.Empty);
@@ -223,6 +216,21 @@ namespace CENS15_V2.Data
                 .Property(c => c.MateriaNombre)
                 .HasDefaultValue(string.Empty);
 
+            modelBuilder.Entity<CertificadoTemplate>()
+                .HasIndex(t => t.Nombre)
+                .IsUnique();
+
+            modelBuilder.Entity<CertificadoTemplate>()
+                .Property(t => t.ContenidoHtml)
+                .HasColumnType("text");
+
+            modelBuilder.Entity<CertificadoTemplate>()
+                .Property(t => t.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            modelBuilder.Entity<CertificadoTemplate>()
+                .Property(t => t.ImagenesJson)
+                .HasColumnType("text");
         }
          
     }

@@ -70,6 +70,13 @@ namespace CENS15_V2.Controllers
             return ok ? NoContent() : NotFound();
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var ok = await _service.DeleteAsync(id);
+            return ok ? NoContent() : NotFound();
+        }
+
         [HttpPut("{id:int}/estado")]
         public async Task<IActionResult> UpdateEstado(int id, UpdateInscripcionEstadoRequest request)
         {

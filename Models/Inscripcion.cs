@@ -16,9 +16,6 @@ namespace CENS15_V2.Models
 
         public EstadoInscripcion Estado { get; set; }
 
-        public string CursoNombre { get; set; } = string.Empty;
-        public string Division { get; set; } = string.Empty;
-
         public ICollection<CursadaMateria> CursadasMaterias { get; set; } = new List<CursadaMateria>();
     }
 }

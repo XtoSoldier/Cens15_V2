@@ -28,13 +28,13 @@ namespace CENS15_V2.Services
                 CursoId = request.CursoId,
                 Anio = request.Anio,
                 FechaInscripcion = DateTime.UtcNow,
-                Estado = EstadoInscripcion.Activa,
-                CursoNombre = curso.CursoNombre,
-                Division = curso.Division
+                Estado = EstadoInscripcion.Activa
             };
 
             _context.Inscripciones.Add(inscripcion);
             await _context.SaveChangesAsync();
+
+            await EnsureCursadasMateriasAsync(inscripcion.Id, curso.Id);
 
             var created = await QueryInscripciones()
                 .AsNoTracking()
@@ -93,15 +93,26 @@ namespace CENS15_V2.Services
                 return false;
             }
 
-            var curso = await ValidateAndGetCursoAsync(request, id);
+            await ValidateAndGetCursoAsync(request, id);
+
+            var cursoChanged = inscripcion.CursoId != request.CursoId;
+
+            if (cursoChanged)
+            {
+                await RemoveCursadasSinCalificacionesAsync(inscripcion.Id);
+            }
 
             inscripcion.AlumnoId = request.AlumnoId;
             inscripcion.CursoId = request.CursoId;
             inscripcion.Anio = request.Anio;
-            inscripcion.CursoNombre = curso.CursoNombre;
-            inscripcion.Division = curso.Division;
 
             await _context.SaveChangesAsync();
+
+            if (cursoChanged)
+            {
+                await EnsureCursadasMateriasAsync(inscripcion.Id, request.CursoId);
+            }
+
             return true;
         }
 
@@ -184,6 +195,72 @@ namespace CENS15_V2.Services
             }
 
             return curso;
+        }
+
+        private async Task EnsureCursadasMateriasAsync(int inscripcionId, int cursoId)
+        {
+            var materias = await _context.Materias
+                .AsNoTracking()
+                .Where(m => m.CursoId == cursoId)
+                .Select(m => new { m.Id, m.Nombre })
+                .ToListAsync();
+
+            if (materias.Count == 0)
+            {
+                return;
+            }
+
+            var materiasCursadas = await _context.CursadasMaterias
+                .Where(cm => cm.InscripcionId == inscripcionId)
+                .Select(cm => cm.MateriaId)
+                .ToListAsync();
+
+            var materiasCursadasSet = materiasCursadas.ToHashSet();
+            var cursadasNuevas = materias
+                .Where(m => !materiasCursadasSet.Contains(m.Id))
+                .Select(m => new CursadaMateria
+                {
+                    InscripcionId = inscripcionId,
+                    MateriaId = m.Id,
+                    MateriaNombre = m.Nombre
+                })
+                .ToList();
+
+            if (cursadasNuevas.Count == 0)
+            {
+                return;
+            }
+
+            _context.CursadasMaterias.AddRange(cursadasNuevas);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var inscripcion = await _context.Inscripciones.FirstOrDefaultAsync(i => i.Id == id);
+            if (inscripcion == null)
+            {
+                return false;
+            }
+
+            _context.Inscripciones.Remove(inscripcion);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task RemoveCursadasSinCalificacionesAsync(int inscripcionId)
+        {
+            var cursadas = await _context.CursadasMaterias
+                .Include(cm => cm.Calificacion)
+                .Where(cm => cm.InscripcionId == inscripcionId)
+                .ToListAsync();
+
+            if (cursadas.Any(cm => cm.Calificacion != null))
+            {
+                throw new InvalidOperationException("No se puede cambiar el curso de una inscripción con calificaciones cargadas. Corresponde reinscribir al alumno.");
+            }
+
+            _context.CursadasMaterias.RemoveRange(cursadas);
         }
     }
 }

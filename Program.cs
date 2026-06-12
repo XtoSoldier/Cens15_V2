@@ -6,6 +6,7 @@ using CENS15_V2.Helper;
 using CENS15.V2.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -116,6 +117,7 @@ builder.Services.AddScoped<IDocenteService, DocenteService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 builder.Services.AddScoped<ICursadaMateriaService, CursadaMateriaService>();
 builder.Services.AddScoped<ICalificacionService, CalificacionService>();
+builder.Services.AddScoped<ICertificadoTemplateService, CertificadoTemplateService>();
 
 var app = builder.Build();
 
@@ -127,6 +129,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+var uploadsRoot = Path.Combine(
+    app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"),
+    "uploads");
+Directory.CreateDirectory(uploadsRoot);
+
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsRoot),
+    RequestPath = "/uploads"
+});
 
 app.UseCors("AllowAll");
 
@@ -140,6 +154,10 @@ using (var scope = app.Services.CreateScope())
     var hasher = scope.ServiceProvider.GetRequiredService<PasswordHasher>();
 
     await db.Database.MigrateAsync();
+    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"CursadasMaterias\" ADD COLUMN IF NOT EXISTS \"MateriaNombre\" text NOT NULL DEFAULT '';");
+    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Calificaciones\" ADD COLUMN IF NOT EXISTS \"MateriaNombre\" text NOT NULL DEFAULT '';");
+    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Inscripciones\" ADD COLUMN IF NOT EXISTS \"CursoNombre\" text NOT NULL DEFAULT '';");
+    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Inscripciones\" ADD COLUMN IF NOT EXISTS \"Division\" text NOT NULL DEFAULT '';");
     await DbSeeder.Seed(db, hasher);
 }
 

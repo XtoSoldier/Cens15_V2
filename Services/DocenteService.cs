@@ -104,6 +104,84 @@ namespace CENS15_V2.Services
             return true;
         }
 
+        public async Task<DocenteDto?> GetByUserIdAsync(Guid userId)
+        {
+            var item = await QueryDocentes()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+
+            return item == null ? null : _mapper.Map<DocenteDto>(item);
+        }
+
+        public async Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId)
+        {
+            var docente = await _context.Docentes
+                .Include(d => d.Materias)
+                    .ThenInclude(dm => dm.Materia)
+                        .ThenInclude(m => m.Curso)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == docenteId);
+
+            if (docente == null) return Enumerable.Empty<DocenteMateriaConAlumnosDto>();
+
+            var materiaIds = docente.Materias.Select(m => m.MateriaId).ToList();
+
+            var cursadas = await _context.CursadasMaterias
+                .Include(cm => cm.Inscripcion)
+                    .ThenInclude(i => i.Alumno)
+                .Include(cm => cm.Calificacion)
+                .Where(cm => materiaIds.Contains(cm.MateriaId))
+                .AsNoTracking()
+                .ToListAsync();
+
+            var result = new List<DocenteMateriaConAlumnosDto>();
+
+            foreach (var dm in docente.Materias)
+            {
+                var materia = dm.Materia;
+                var cursadasDeMateria = cursadas.Where(cm => cm.MateriaId == materia.Id).ToList();
+
+                if (cursadasDeMateria.Count == 0) continue;
+
+                var alumnos = cursadasDeMateria.Select(cm =>
+                {
+                    var cal = cm.Calificacion;
+                    return new AlumnoCalificacionSimpleDto
+                    {
+                        AlumnoId = cm.Inscripcion.AlumnoId,
+                        AlumnoNombre = $"{cm.Inscripcion.Alumno.Apellidos}, {cm.Inscripcion.Alumno.Nombres}",
+                        CursadaMateriaId = cm.Id,
+                        CalificacionId = cal?.Id,
+                        C1Promedio = cal?.C1Promedio,
+                        C2Promedio = cal?.C2Promedio,
+                        PromedioAnual = cal?.PromedioAnual,
+                        RecuperacionDiciembre = cal?.RecuperacionDiciembre,
+                        RecuperacionMarzo = cal?.RecuperacionMarzo,
+                        CalificacionFinal = cal?.CalificacionFinal,
+                        Estado = (int)(cal?.Estado ?? 0)
+                    };
+                }).OrderBy(a => a.AlumnoNombre).ToList();
+
+                var anio = cursadasDeMateria
+                    .Select(cm => cm.Inscripcion.Anio)
+                    .FirstOrDefault();
+
+                result.Add(new DocenteMateriaConAlumnosDto
+                {
+                    MateriaId = materia.Id,
+                    MateriaNombre = materia.Nombre,
+                    CursoId = materia.CursoId,
+                    CursoNombre = materia.Curso.CursoNombre,
+                    Division = materia.Curso.Division,
+                    CursoLabel = $"{materia.Curso.CursoNombre} {materia.Curso.Division}".Trim(),
+                    Anio = anio,
+                    Alumnos = alumnos
+                });
+            }
+
+            return result.OrderBy(r => r.CursoNombre).ThenBy(r => r.MateriaNombre);
+        }
+
         private async Task ValidateRulesAsync(string nombres, string apellidos, string email, Guid? userId, int? id = null)
         {
             if (string.IsNullOrWhiteSpace(nombres))

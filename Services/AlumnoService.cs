@@ -4,11 +4,14 @@ using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.AlumnosDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace CENS15_V2.Services
 {
     public class AlumnoService : IAlumnoService
     {
+        private const int MaxImagenesPorDocumento = 2;
+
         private readonly AppDbContext _context;
         private readonly IMapper _mapper;
 
@@ -34,8 +37,13 @@ namespace CENS15_V2.Services
         {
             ValidateGenero(request.Genero);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
+            await ValidateNumeroDocumentoDisponibleAsync(request.NumeroDocumento);
 
             var alumno = _mapper.Map<Alumno>(request);
+            alumno.Nombres = FormatNombreApellido(alumno.Nombres);
+            alumno.Apellidos = FormatNombreApellido(alumno.Apellidos);
+            alumno.NumeroDocumento = request.NumeroDocumento.Trim();
+            NormalizeDocumentos(alumno.Documentos);
             _context.Alumnos.Add(alumno);
             await _context.SaveChangesAsync();
 
@@ -47,6 +55,7 @@ namespace CENS15_V2.Services
         {
             ValidateGenero(request.Genero);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
+            await ValidateNumeroDocumentoDisponibleAsync(request.NumeroDocumento, id);
 
             var alumno = await QueryAlumno().FirstOrDefaultAsync(a => a.Id == id);
             if (alumno == null)
@@ -54,9 +63,9 @@ namespace CENS15_V2.Services
                 return false;
             }
 
-            alumno.Nombres = request.Nombres;
-            alumno.Apellidos = request.Apellidos;
-            alumno.NumeroDocumento = request.NumeroDocumento;
+            alumno.Nombres = FormatNombreApellido(request.Nombres);
+            alumno.Apellidos = FormatNombreApellido(request.Apellidos);
+            alumno.NumeroDocumento = request.NumeroDocumento.Trim();
             alumno.FechaNacimiento = request.FechaNacimiento;
             alumno.Genero = request.Genero;
             alumno.Domicilio = request.Domicilio;
@@ -77,7 +86,8 @@ namespace CENS15_V2.Services
             {
                 TipoDocumentoAlumnoId = d.TipoDocumentoAlumnoId,
                 Presentado = d.Presentado,
-                ImagenUrl = d.ImagenUrl
+                ImagenUrl = GetImagenesUrl(d.ImagenUrl, d.ImagenesUrl).FirstOrDefault(),
+                ImagenesUrl = GetImagenesUrl(d.ImagenUrl, d.ImagenesUrl)
             }).ToList();
 
             await _context.SaveChangesAsync();
@@ -115,6 +125,41 @@ namespace CENS15_V2.Services
             }
         }
 
+        private static string FormatNombreApellido(string value)
+        {
+            var normalized = value.Trim().ToLower(new CultureInfo("es-AR"));
+            return CultureInfo.GetCultureInfo("es-AR").TextInfo.ToTitleCase(normalized);
+        }
+
+        private static void NormalizeDocumentos(IEnumerable<AlumnoDocumento> documentos)
+        {
+            foreach (var documento in documentos)
+            {
+                documento.ImagenesUrl = GetImagenesUrl(documento.ImagenUrl, documento.ImagenesUrl);
+                documento.ImagenUrl = documento.ImagenesUrl.FirstOrDefault();
+            }
+        }
+
+        private static List<string> GetImagenesUrl(string? imagenUrl, IEnumerable<string>? imagenesUrl)
+        {
+            var urls = imagenesUrl?
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url.Trim())
+                .ToList() ?? new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(imagenUrl) && urls.Count == 0)
+            {
+                urls.Add(imagenUrl.Trim());
+            }
+
+            if (urls.Count > MaxImagenesPorDocumento)
+            {
+                throw new InvalidOperationException($"Cada documento acepta como máximo {MaxImagenesPorDocumento} imágenes.");
+            }
+
+            return urls;
+        }
+
         private async Task ValidateTipoDocumentosAsync(IEnumerable<int> tipoDocumentoIds)
         {
             var ids = tipoDocumentoIds.Distinct().ToList();
@@ -127,6 +172,19 @@ namespace CENS15_V2.Services
             if (count != ids.Count)
             {
                 throw new InvalidOperationException("Uno o más tipos de documento no existen.");
+            }
+        }
+
+        private async Task ValidateNumeroDocumentoDisponibleAsync(string numeroDocumento, int? alumnoId = null)
+        {
+            var normalizedNumeroDocumento = numeroDocumento.Trim();
+            var exists = await _context.Alumnos.AnyAsync(a =>
+                a.NumeroDocumento == normalizedNumeroDocumento &&
+                (!alumnoId.HasValue || a.Id != alumnoId.Value));
+
+            if (exists)
+            {
+                throw new InvalidOperationException($"Ya existe un alumno registrado con DNI {normalizedNumeroDocumento}.");
             }
         }
     }

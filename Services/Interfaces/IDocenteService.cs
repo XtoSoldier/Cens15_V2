@@ -9,5 +9,7 @@ namespace CENS15_V2.Services.Interfaces
         Task<DocenteDto> CreateAsync(CreateDocenteRequest request);
         Task<bool> UpdateAsync(int id, UpdateDocenteRequest request);
         Task<bool> DeleteAsync(int id);
+        Task<DocenteDto?> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId);
     }
 }

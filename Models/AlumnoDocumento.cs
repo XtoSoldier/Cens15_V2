@@ -12,6 +12,8 @@ namespace CENS15_V2.Models
 
         public string? ImagenUrl { get; set; }
 
+        public List<string> ImagenesUrl { get; set; } = new();
+
         public Alumno Alumno { get; set; } = null!;
 
         public TipoDocumentoAlumno TipoDocumentoAlumno { get; set; } = null!;

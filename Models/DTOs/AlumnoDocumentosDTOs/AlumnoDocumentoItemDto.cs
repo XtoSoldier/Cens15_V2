@@ -8,5 +8,6 @@ namespace CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs
         public string TipoDocumentoAlumnoNombre { get; set; } = string.Empty;
         public bool Presentado { get; set; }
         public string? ImagenUrl { get; set; }
+        public List<string> ImagenesUrl { get; set; } = new();
     }
 }
