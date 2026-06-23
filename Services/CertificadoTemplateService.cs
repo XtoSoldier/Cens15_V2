@@ -164,7 +164,7 @@ namespace CENS15_V2.Services
                 ["bloque_calificaciones"] = BuildCalificacionesHtml(alumno, inscripcionIds),
             };
 
-            var html = ReplacePlaceholders(template.ContenidoHtml, replacements);
+            var html = NormalizeDegreeSymbols(ReplacePlaceholders(template.ContenidoHtml, replacements));
 
             return new RenderedCertificadoTemplateDto
             {
@@ -209,6 +209,18 @@ namespace CENS15_V2.Services
             return result;
         }
 
+        private static string NormalizeDegreeSymbols(string value)
+        {
+            var normalized = (value ?? string.Empty).Replace('º', '°');
+            while (normalized.Contains("°°"))
+            {
+                normalized = normalized.Replace("°°", "°");
+            }
+
+            normalized = normalized.Replace("° °", "° ");
+            return normalized;
+        }
+
         private static string BuildCalificacionesHtml(Alumno alumno, IReadOnlyCollection<int>? inscripcionIds)
         {
             var sb = new StringBuilder();
@@ -227,11 +239,11 @@ namespace CENS15_V2.Services
             foreach (var inscripcion in inscripciones)
             {
                 var curso = inscripcion.Curso;
-                sb.Append("<section class=\"calificaciones-curso\" style=\"margin:0 0 18px;page-break-inside:avoid;\">");
+                sb.Append("<section class=\"calificaciones-curso\" style=\"margin:0 0 33px;page-break-inside:avoid;\">");
                 sb.Append("<p style=\"margin:0 0 7px;font-weight:700;\"><strong>Curso:</strong> ")
-                    .Append(Encode($"{curso.CursoNombre}° {curso.Division} {curso.Orientacion.Nombre}"))
+                    .Append(Encode(FormatCursoNombre(curso)))
                     .Append("</p>");
-                sb.Append("<table class=\"calificaciones-tabla\" style=\"width:100%;border-collapse:collapse;font-size:9px;\">");
+                sb.Append("<table class=\"calificaciones-tabla\" style=\"width:100%;border-collapse:collapse;font-size:10px;\">");
                 sb.Append("<thead><tr>");
                 sb.Append(BuildTh("Asignatura"));
                 sb.Append(BuildTh("1er Cuat."));
@@ -279,6 +291,31 @@ namespace CENS15_V2.Services
         private static string FormatAlumnoNombre(Alumno alumno)
         {
             return string.Join(" ", new[] { alumno.Apellidos, alumno.Nombres }.Where(v => !string.IsNullOrWhiteSpace(v)));
+        }
+
+        private static string FormatCursoNombre(Curso curso)
+        {
+            var cursoNombre = NormalizeCursoPart(curso.CursoNombre);
+            var division = NormalizeCursoPart(curso.Division).TrimStart('°').Trim();
+            var numeroDivision = string.IsNullOrWhiteSpace(cursoNombre)
+                ? division
+                : cursoNombre.Contains('°')
+                    ? $"{cursoNombre} {division}".Trim()
+                    : $"{cursoNombre}° {division}".Trim();
+
+            while (numeroDivision.Contains("°°"))
+            {
+                numeroDivision = numeroDivision.Replace("°°", "°");
+            }
+
+            numeroDivision = numeroDivision.Replace("° °", "° ");
+
+            return string.Join(" ", new[] { numeroDivision, curso.Orientacion.Nombre }.Where(v => !string.IsNullOrWhiteSpace(v)));
+        }
+
+        private static string NormalizeCursoPart(string value)
+        {
+            return NormalizeDegreeSymbols(value).Trim();
         }
 
         private static string BuildTh(string text)

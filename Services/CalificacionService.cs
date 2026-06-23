@@ -99,6 +99,34 @@ namespace CENS15_V2.Services
             return true;
         }
 
+        public async Task<bool> CanUserCalificarCursadaAsync(Guid userId, int cursadaMateriaId)
+        {
+            var docenteId = await _context.Docentes
+                .Where(d => d.UserId == userId)
+                .Select(d => (int?)d.Id)
+                .FirstOrDefaultAsync();
+
+            if (!docenteId.HasValue)
+            {
+                return true;
+            }
+
+            var materiaId = await _context.CursadasMaterias
+                .Where(cm => cm.Id == cursadaMateriaId)
+                .Select(cm => (int?)cm.MateriaId)
+                .FirstOrDefaultAsync();
+
+            if (!materiaId.HasValue)
+            {
+                return false;
+            }
+
+            return await _context.MateriaDocentes.AnyAsync(md =>
+                md.DocenteId == docenteId.Value &&
+                md.MateriaId == materiaId.Value &&
+                md.Activo);
+        }
+
         private async Task<string> ValidateAndGetMateriaNombreAsync(int cursadaMateriaId, int? id = null)
         {
             var cursadaMateria = await _context.CursadasMaterias

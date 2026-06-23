@@ -216,6 +216,12 @@ namespace CENS15_V2.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("InitialAccessSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -508,6 +514,9 @@ namespace CENS15_V2.Migrations
 
                     b.Property<int>("DocenteId")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Rol")
                         .IsRequired()

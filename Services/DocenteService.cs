@@ -115,6 +115,26 @@ namespace CENS15_V2.Services
 
         public async Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId)
         {
+            return await GetMateriasConAlumnosAsync(docenteId, onlyActivas: true);
+        }
+
+        public async Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasActivasConAlumnosByUserIdAsync(Guid userId)
+        {
+            var docenteId = await _context.Docentes
+                .Where(d => d.UserId == userId)
+                .Select(d => (int?)d.Id)
+                .FirstOrDefaultAsync();
+
+            if (!docenteId.HasValue)
+            {
+                return Enumerable.Empty<DocenteMateriaConAlumnosDto>();
+            }
+
+            return await GetMateriasConAlumnosAsync(docenteId.Value, onlyActivas: true);
+        }
+
+        private async Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId, bool onlyActivas)
+        {
             var docente = await _context.Docentes
                 .Include(d => d.Materias)
                     .ThenInclude(dm => dm.Materia)
@@ -124,7 +144,11 @@ namespace CENS15_V2.Services
 
             if (docente == null) return Enumerable.Empty<DocenteMateriaConAlumnosDto>();
 
-            var materiaIds = docente.Materias.Select(m => m.MateriaId).ToList();
+            var docenteMaterias = onlyActivas
+                ? docente.Materias.Where(m => m.Activo).ToList()
+                : docente.Materias.ToList();
+
+            var materiaIds = docenteMaterias.Select(m => m.MateriaId).ToList();
 
             var cursadas = await _context.CursadasMaterias
                 .Include(cm => cm.Inscripcion)
@@ -136,7 +160,7 @@ namespace CENS15_V2.Services
 
             var result = new List<DocenteMateriaConAlumnosDto>();
 
-            foreach (var dm in docente.Materias)
+            foreach (var dm in docenteMaterias)
             {
                 var materia = dm.Materia;
                 var cursadasDeMateria = cursadas.Where(cm => cm.MateriaId == materia.Id).ToList();

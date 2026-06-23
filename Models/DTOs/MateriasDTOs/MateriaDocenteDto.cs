@@ -5,5 +5,6 @@ namespace CENS15_V2.Models.DTOs.MateriasDTOs
         public int DocenteId { get; set; }
         public string Docente { get; set; } = string.Empty;
         public string Rol { get; set; } = string.Empty;
+        public bool Activo { get; set; }
     }
 }

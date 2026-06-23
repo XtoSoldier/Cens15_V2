@@ -50,7 +50,8 @@ namespace CENS15_V2.Services
                 Docentes = docentes.Select(d => new MateriaDocente
                 {
                     DocenteId = d.DocenteId,
-                    Rol = d.Rol.Trim()
+                    Rol = d.Rol.Trim(),
+                    Activo = d.Activo
                 }).ToList()
             };
 
@@ -86,7 +87,8 @@ namespace CENS15_V2.Services
             {
                 MateriaId = materia.Id,
                 DocenteId = d.DocenteId,
-                Rol = d.Rol.Trim()
+                Rol = d.Rol.Trim(),
+                Activo = d.Activo
             }).ToList();
 
             await _context.SaveChangesAsync();
@@ -132,6 +134,11 @@ namespace CENS15_V2.Services
                 return;
             }
 
+            if (docentes.Count > 2)
+            {
+                throw new InvalidOperationException("Solo se puede asignar un docente titular y un docente suplente por materia.");
+            }
+
             var docentesIds = docentes.Select(d => d.DocenteId).ToList();
             if (docentesIds.Distinct().Count() != docentesIds.Count)
             {
@@ -144,9 +151,20 @@ namespace CENS15_V2.Services
                 throw new InvalidOperationException("El rol del docente en la materia es obligatorio.");
             }
 
+            if (roles.Any(r => !string.Equals(r, "Titular", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(r, "Suplente", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException("El rol del docente debe ser Titular o Suplente.");
+            }
+
             if (roles.Distinct(StringComparer.OrdinalIgnoreCase).Count() != roles.Count)
             {
                 throw new InvalidOperationException("No se puede repetir el rol dentro de una misma materia.");
+            }
+
+            if (docentes.Count(d => d.Activo) != 1)
+            {
+                throw new InvalidOperationException("Debe quedar exactamente un docente activo por materia.");
             }
 
             var docentesExistentes = await _context.Docentes

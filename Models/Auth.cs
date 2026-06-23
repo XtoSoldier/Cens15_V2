@@ -7,6 +7,8 @@ namespace CENS15_V2.Models
         public Guid Id { get; set; }
         public string Email { get; set; }
         public string PasswordHash { get; set; }
+        public bool MustChangePassword { get; set; }
+        public DateTime? InitialAccessSentAt { get; set; }
         public Token Token { get; set; }
         public User User { get; set; }
     }

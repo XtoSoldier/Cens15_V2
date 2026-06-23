@@ -13,6 +13,7 @@ namespace CENS15_V2.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Auth> Auths { get; set; }
         public DbSet<Token> Tokens { get; set; }
+        public DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Responsibility> Responsibilities { get; set; }
 
@@ -31,6 +32,7 @@ namespace CENS15_V2.Data
         public DbSet<CursadaMateria> CursadasMaterias { get; set; }
         public DbSet<Calificacion> Calificaciones { get; set; }
         public DbSet<CertificadoTemplate> CertificadoTemplates { get; set; }
+        public DbSet<LoginActivity> LoginActivities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,6 +41,38 @@ namespace CENS15_V2.Data
             ConfigureUserAuthToken(modelBuilder);
             ConfigureRoleResponsibility(modelBuilder);
             ConfigureAlumno(modelBuilder);
+            ConfigureLoginActivity(modelBuilder);
+            ConfigurePasswordResetCode(modelBuilder);
+        }
+
+        private static void ConfigurePasswordResetCode(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<PasswordResetCode>()
+                .HasOne(c => c.Auth)
+                .WithMany()
+                .HasForeignKey(c => c.AuthId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PasswordResetCode>()
+                .HasIndex(c => c.AuthId);
+
+            modelBuilder.Entity<PasswordResetCode>()
+                .HasIndex(c => c.ExpiresAt);
+        }
+
+        private static void ConfigureLoginActivity(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<LoginActivity>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<LoginActivity>()
+                .HasIndex(a => a.CreatedAt);
+
+            modelBuilder.Entity<LoginActivity>()
+                .HasIndex(a => a.Email);
         }
 
         private static void ConfigureUserAuthToken(ModelBuilder modelBuilder)

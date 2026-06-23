@@ -14,8 +14,9 @@ namespace CENS15_V2.Models.DTOs.AuthDTOs
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        [Required]
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
+
+        public Guid? RoleId { get; set; }
 
         public string? Image { get; set; }
     }

@@ -27,6 +27,7 @@ namespace CENS15.V2.Services
             var claims = new List<Claim>
     {
         new Claim(JwtRegisteredClaimNames.Sub, auth.User.Id.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, auth.User.Id.ToString()),
         new Claim(JwtRegisteredClaimNames.Email, auth.Email),
         new Claim(ClaimTypes.Name, auth.User.FirstName),
         new Claim(ClaimTypes.Role, auth.User.Role.Name),
@@ -54,7 +55,8 @@ namespace CENS15.V2.Services
                 Expiration = expiration,
                 Name = auth.User.FirstName,
                 Role = auth.User.Role.Name,
-                UserId = auth.User.Id.ToString()
+                UserId = auth.User.Id.ToString(),
+                MustChangePassword = auth.MustChangePassword
             };
         }
     }
