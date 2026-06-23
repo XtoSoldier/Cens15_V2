@@ -1,6 +1,7 @@
 using CENS15_V2.Models.DTOs.CalificacionesDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CENS15_V2.Controllers
 {
@@ -20,6 +21,11 @@ namespace CENS15_V2.Controllers
         {
             try
             {
+                if (!await CanCalificarAsync(request.CursadaMateriaId))
+                {
+                    return StatusCode(403, "El docente no está activo para calificar esta materia.");
+                }
+
                 var created = await _service.CreateAsync(request);
                 return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
             }
@@ -34,6 +40,11 @@ namespace CENS15_V2.Controllers
         {
             try
             {
+                if (!await CanCalificarAsync(request.CursadaMateriaId))
+                {
+                    return StatusCode(403, "El docente no está activo para calificar esta materia.");
+                }
+
                 var ok = await _service.UpdateAsync(id, request);
                 return ok ? NoContent() : NotFound();
             }
@@ -55,6 +66,19 @@ namespace CENS15_V2.Controllers
         {
             var item = await _service.GetByCursadaMateriaIdAsync(cursadaMateriaId);
             return item == null ? NotFound() : Ok(item);
+        }
+
+        private async Task<bool> CanCalificarAsync(int cursadaMateriaId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+
+            if (!Guid.TryParse(userIdValue, out var userId))
+            {
+                return true;
+            }
+
+            return await _service.CanUserCalificarCursadaAsync(userId, cursadaMateriaId);
         }
     }
 }

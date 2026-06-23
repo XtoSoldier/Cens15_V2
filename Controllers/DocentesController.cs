@@ -2,6 +2,7 @@ using CENS15_V2.Models.DTOs.DocentesDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CENS15_V2.Controllers
 {
@@ -76,6 +77,21 @@ namespace CENS15_V2.Controllers
         public async Task<IActionResult> GetAlumnosParaCalificar(int id)
         {
             return Ok(await _service.GetMateriasConAlumnosAsync(id));
+        }
+
+        [Authorize]
+        [HttpGet("mis-alumnos-para-calificar")]
+        public async Task<IActionResult> GetMisAlumnosParaCalificar()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+
+            if (!Guid.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(await _service.GetMateriasActivasConAlumnosByUserIdAsync(userId));
         }
     }
 }
