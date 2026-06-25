@@ -1,11 +1,11 @@
 using CENS15_V2.Models.DTOs.AnexosDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
-    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class AnexosController : ControllerBase
@@ -18,12 +18,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.AnexosConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AnexosConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -31,6 +33,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.AnexosCrear)]
         public async Task<IActionResult> Post(CreateAnexoRequest request)
         {
             try
@@ -45,6 +48,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AnexosEditar)]
         public async Task<IActionResult> Put(int id, UpdateAnexoRequest request)
         {
             try
@@ -59,6 +63,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AnexosEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             try

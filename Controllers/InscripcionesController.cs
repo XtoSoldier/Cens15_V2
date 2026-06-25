@@ -1,5 +1,7 @@
 using CENS15_V2.Models.DTOs.InscripcionesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
@@ -16,6 +18,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesCrear)]
         public async Task<IActionResult> Post(CreateInscripcionRequest request)
         {
             try
@@ -31,6 +34,7 @@ namespace CENS15_V2.Controllers
 
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesEditar)]
         public async Task<IActionResult> Put(int id, UpdateInscripcionRequest request)
         {
             try
@@ -45,6 +49,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -52,18 +57,21 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("/api/alumnos/{id:int}/inscripciones")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesConsultar)]
         public async Task<IActionResult> GetByAlumno(int id)
         {
             return Ok(await _service.GetByAlumnoIdAsync(id));
         }
 
         [HttpGet("/api/cursos/{id:int}/inscripciones")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesConsultar)]
         public async Task<IActionResult> GetByCurso(int id, [FromQuery] int? anio)
         {
             return Ok(await _service.GetByCursoIdAsync(id, anio));
         }
 
         [HttpPatch("{id:int}/anular")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesEditar)]
         public async Task<IActionResult> Anular(int id)
         {
             var ok = await _service.AnularAsync(id);
@@ -71,6 +79,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             var ok = await _service.DeleteAsync(id);
@@ -78,6 +87,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}/estado")]
+        [Authorize(Policy = ResponsibilityPolicies.InscripcionesEditar)]
         public async Task<IActionResult> UpdateEstado(int id, UpdateInscripcionEstadoRequest request)
         {
             try

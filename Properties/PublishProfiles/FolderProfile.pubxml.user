@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>C:\Development\deploy\CENS15\API</_PublishTargetUrl>
+    <History>True|2026-06-24T23:54:22.4400484Z||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>

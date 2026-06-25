@@ -1,5 +1,7 @@
 using CENS15_V2.Models.DTOs.AlumnoDocumentosDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
@@ -17,12 +19,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosConsultar)]
         public async Task<IActionResult> Get([FromQuery] int? alumnoId)
         {
             return Ok(await _service.GetAllAsync(alumnoId));
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var documento = await _service.GetByIdAsync(id);
@@ -30,6 +34,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosCrear)]
         public async Task<IActionResult> Post(CreateAlumnoDocumentoItemRequest request)
         {
             try
@@ -44,6 +49,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost("upload")]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosCrear)]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> PostUpload([FromForm] CreateAlumnoDocumentoItemRequest request)
         {
@@ -51,6 +57,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosEditar)]
         public async Task<IActionResult> Put(int id, UpdateAlumnoDocumentoItemRequest request)
         {
             try
@@ -65,6 +72,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}/upload")]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosEditar)]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> PutUpload(int id, [FromForm] UpdateAlumnoDocumentoItemRequest request)
         {
@@ -72,6 +80,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.AlumnoDocumentosEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             var ok = await _service.DeleteAsync(id);

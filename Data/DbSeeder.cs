@@ -1,6 +1,7 @@
 ﻿using CENS15_V2.Entities;
 using CENS15_V2.Helper;
 using CENS15_V2.Models;
+using CENS15_V2.Security;
 using Microsoft.EntityFrameworkCore;
 
 namespace CENS15_V2.Data
@@ -28,6 +29,8 @@ namespace CENS15_V2.Data
                     });
                 }
             }
+
+            await SeedResponsibilities(context);
 
             var tiposDocumentoToCreate = new[]
             {
@@ -81,6 +84,53 @@ namespace CENS15_V2.Data
             await SeedCursadasMaterias(context);
             await VincularAdminConDocente(context);
             await SeedAlumnosInscriptosParaGarcia(context);
+        }
+
+        private static async Task SeedResponsibilities(AppDbContext context)
+        {
+            foreach (var responsibilityName in ResponsibilityPolicies.All)
+            {
+                if (!await context.Responsibilities.AnyAsync(r => r.Name == responsibilityName))
+                {
+                    context.Responsibilities.Add(new Responsibility
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = responsibilityName,
+                        Description = $"Permite acceder al modulo {responsibilityName}."
+                    });
+                }
+            }
+
+            await context.SaveChangesAsync();
+
+            var adminRole = await context.Roles
+                .Include(r => r.Responsibilities)
+                .FirstOrDefaultAsync(r => r.Name == "Admin");
+
+            if (adminRole == null)
+            {
+                return;
+            }
+
+            var allResponsibilityIds = await context.Responsibilities
+                .Where(r => ResponsibilityPolicies.All.Contains(r.Name))
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            var assignedIds = adminRole.Responsibilities
+                .Select(rr => rr.ResponsibilityId)
+                .ToHashSet();
+
+            foreach (var responsibilityId in allResponsibilityIds.Where(id => !assignedIds.Contains(id)))
+            {
+                adminRole.Responsibilities.Add(new RoleResponsibility
+                {
+                    RoleId = adminRole.Id,
+                    ResponsibilityId = responsibilityId
+                });
+            }
+
+            await context.SaveChangesAsync();
         }
 
         private static async Task VincularAdminConDocente(AppDbContext context)

@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using System.Text;
 using System.Text.Json.Serialization;
+using CENS15_V2.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,9 +95,18 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var responsibility in ResponsibilityPolicies.All)
+    {
+        options.AddPolicy(responsibility, policy =>
+            policy.RequireAssertion(context =>
+                ResponsibilityPolicies.HasResponsibility(context.User, responsibility)));
+    }
+});
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(AppDbContextFactory.ConnectionString)
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? AppDbContextFactory.DefaultConnectionString)
 );
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -124,11 +134,11 @@ builder.Services.AddScoped<ILoginActivityService, LoginActivityService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 app.UseHttpsRedirection();
 

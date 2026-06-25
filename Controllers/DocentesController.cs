@@ -1,4 +1,5 @@
 using CENS15_V2.Models.DTOs.DocentesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,6 @@ using System.Security.Claims;
 
 namespace CENS15_V2.Controllers
 {
-    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class DocentesController : ControllerBase
@@ -19,12 +19,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -32,6 +34,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesCrear)]
         public async Task<IActionResult> Post(CreateDocenteRequest request)
         {
             try
@@ -46,6 +49,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesEditar)]
         public async Task<IActionResult> Put(int id, UpdateDocenteRequest request)
         {
             try
@@ -60,6 +64,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             var ok = await _service.DeleteAsync(id);
@@ -67,6 +72,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("por-usuario/{userId:guid}")]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesConsultar)]
         public async Task<IActionResult> GetByUserId(Guid userId)
         {
             var item = await _service.GetByUserIdAsync(userId);
@@ -74,12 +80,13 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("{id:int}/alumnos-para-calificar")]
+        [Authorize(Policy = ResponsibilityPolicies.DocentesConsultar)]
         public async Task<IActionResult> GetAlumnosParaCalificar(int id)
         {
             return Ok(await _service.GetMateriasConAlumnosAsync(id));
         }
 
-        [Authorize]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesConsultar)]
         [HttpGet("mis-alumnos-para-calificar")]
         public async Task<IActionResult> GetMisAlumnosParaCalificar()
         {

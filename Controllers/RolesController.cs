@@ -1,11 +1,11 @@
 ﻿using CENS15_V2.Models.DTOs.RolesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
-    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class RolesController : ControllerBase
@@ -18,12 +18,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.RolesConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.RolesConsultar)]
         public async Task<IActionResult> Get(Guid id)
         {
             var role = await _service.GetByIdAsync(id);
@@ -31,6 +33,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("{id}/responsibilities")]
+        [Authorize(Policy = ResponsibilityPolicies.RolesConsultar)]
         public async Task<IActionResult> GetResponsibilities(Guid id)
         {
             var role = await _service.GetByIdAsync(id);
@@ -44,6 +47,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.RolesCrear)]
         public async Task<IActionResult> Post(CreateRoleRequest request)
         {
             try
@@ -58,6 +62,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.RolesEditar)]
         public async Task<IActionResult> Put(Guid id, UpdateRoleRequest request)
         {
             try
@@ -72,6 +77,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id}/responsibilities")]
+        [Authorize(Policy = ResponsibilityPolicies.RolesEditar)]
         public async Task<IActionResult> AssignResponsibilities(Guid id, AssignResponsibilitiesRequest request)
         {
             try
@@ -86,6 +92,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.RolesEliminar)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var ok = await _service.DeleteAsync(id);

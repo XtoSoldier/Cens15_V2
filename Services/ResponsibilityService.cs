@@ -19,6 +19,7 @@ namespace CENS15_V2.Services
         {
             return await _context.Responsibilities
                 .AsNoTracking()
+                .OrderBy(r => r.Name)
                 .Select(r => new ResponsibilityDto
                 {
                     Id = r.Id,

@@ -1,5 +1,7 @@
 using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
@@ -16,12 +18,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.TiposDocumentoAlumnoConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.TiposDocumentoAlumnoConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -29,6 +33,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.TiposDocumentoAlumnoCrear)]
         public async Task<IActionResult> Post(CreateTipoDocumentoAlumnoRequest request)
         {
             try
@@ -43,6 +48,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.TiposDocumentoAlumnoEditar)]
         public async Task<IActionResult> Put(int id, UpdateTipoDocumentoAlumnoRequest request)
         {
             try
@@ -57,6 +63,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.TiposDocumentoAlumnoEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             try

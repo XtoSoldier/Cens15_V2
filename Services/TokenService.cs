@@ -4,6 +4,7 @@ using System.Text;
 using CENS15_V2.Entities;
 using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.AuthDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 
@@ -33,6 +34,11 @@ namespace CENS15.V2.Services
         new Claim(ClaimTypes.Role, auth.User.Role.Name),
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
+
+            foreach (var responsibility in auth.User.Role.Responsibilities.Select(rr => rr.Responsibility.Name).Distinct())
+            {
+                claims.Add(new Claim(ResponsibilityPolicies.ClaimType, responsibility));
+            }
 
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwt["Key"]));

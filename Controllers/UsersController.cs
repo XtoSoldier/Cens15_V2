@@ -1,11 +1,11 @@
 ﻿using CENS15_V2.Models.DTOs.UsersDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
-    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
@@ -18,12 +18,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosConsultar)]
         public async Task<IActionResult> GetById(Guid id)
         {
             var user = await _service.GetByIdAsync(id);
@@ -31,6 +33,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosCrear)]
         public async Task<IActionResult> Post(CreateUserRequest request)
         {
             var created = await _service.CreateAsync(request);
@@ -38,6 +41,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosEditar)]
         public async Task<IActionResult> Put(Guid id, UpdateUserRequest request)
         {
             var ok = await _service.UpdateAsync(id, request);
@@ -45,6 +49,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPatch("{id}/status")]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosEditar)]
         public async Task<IActionResult> PatchStatus(Guid id, UpdateUserStatusRequest request)
         {
             var ok = await _service.UpdateStatusAsync(id, request);
@@ -53,6 +58,7 @@ namespace CENS15_V2.Controllers
 
 
         [HttpPatch("{id}/email")]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosEditar)]
         public async Task<IActionResult> PatchEmail(Guid id, UpdateUserEmailRequest request)
         {
             try
@@ -67,6 +73,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.UsuariosEliminar)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var ok = await _service.DeleteAsync(id);

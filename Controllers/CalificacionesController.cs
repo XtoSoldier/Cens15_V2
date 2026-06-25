@@ -1,5 +1,7 @@
 using CENS15_V2.Models.DTOs.CalificacionesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -17,6 +19,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesCrear)]
         public async Task<IActionResult> Post(CreateCalificacionRequest request)
         {
             try
@@ -36,6 +39,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesEditar)]
         public async Task<IActionResult> Put(int id, UpdateCalificacionRequest request)
         {
             try
@@ -55,6 +59,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -62,6 +67,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("/api/cursadas-materias/{cursadaMateriaId:int}/calificacion")]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesConsultar)]
         public async Task<IActionResult> GetByCursadaMateria(int cursadaMateriaId)
         {
             var item = await _service.GetByCursadaMateriaIdAsync(cursadaMateriaId);

@@ -1,5 +1,7 @@
 ﻿using CENS15_V2.Models.DTOs.ResponsibilitiesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
@@ -16,12 +18,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.ResponsabilidadesConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.ResponsabilidadesConsultar)]
         public async Task<IActionResult> Get(Guid id)
         {
             var responsibility = await _service.GetByIdAsync(id);
@@ -29,6 +33,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.ResponsabilidadesCrear)]
         public async Task<IActionResult> Post(CreateResponsibilityRequest request)
         {
             var created = await _service.CreateAsync(request);
@@ -36,6 +41,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.ResponsabilidadesEditar)]
         public async Task<IActionResult> Put(Guid id, UpdateResponsibilityRequest request)
         {
             var ok = await _service.UpdateAsync(id, request);
@@ -43,6 +49,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = ResponsibilityPolicies.ResponsabilidadesEliminar)]
         public async Task<IActionResult> Delete(Guid id)
         {
             var ok = await _service.DeleteAsync(id);

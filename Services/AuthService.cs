@@ -29,6 +29,8 @@ namespace CENS15_V2.Services
             var auth = await _context.Auths
                 .Include(a => a.User)
                 .ThenInclude(u => u.Role)
+                .ThenInclude(r => r.Responsibilities)
+                .ThenInclude(rr => rr.Responsibility)
                 .FirstOrDefaultAsync(x => x.Email == request.Email);
 
             if (auth == null)

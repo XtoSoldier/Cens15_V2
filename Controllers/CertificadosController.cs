@@ -1,10 +1,11 @@
 using CENS15_V2.Models.DTOs.CertificadoTemplatesDTOs;
+using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CENS15_V2.Controllers
 {
-    //[Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CertificadosController : ControllerBase
@@ -19,12 +20,14 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosConsultar)]
         public async Task<IActionResult> Get()
         {
             return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosConsultar)]
         public async Task<IActionResult> GetById(int id)
         {
             var item = await _service.GetByIdAsync(id);
@@ -32,6 +35,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpGet("{id:int}/render/alumno/{alumnoId:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosConsultar)]
         public async Task<IActionResult> RenderForAlumno(int id, int alumnoId, [FromQuery] string? inscripcionIds = null)
         {
             var ids = ParseInscripcionIds(inscripcionIds);
@@ -57,6 +61,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosCrear)]
         public async Task<IActionResult> Post(CreateCertificadoTemplateRequest request)
         {
             try
@@ -71,6 +76,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosEditar)]
         public async Task<IActionResult> Put(int id, UpdateCertificadoTemplateRequest request)
         {
             try
@@ -85,6 +91,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -99,6 +106,7 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpPost("subir-imagen")]
+        [Authorize(Policy = ResponsibilityPolicies.CertificadosEditar)]
         public async Task<IActionResult> SubirImagen(IFormFile file)
         {
             if (file == null || file.Length == 0)
