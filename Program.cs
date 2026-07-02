@@ -205,7 +205,7 @@ using (var scope = app.Services.CreateScope())
     ");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_AuthId\" ON \"PasswordResetCodes\" (\"AuthId\");");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_ExpiresAt\" ON \"PasswordResetCodes\" (\"ExpiresAt\");");
-    await DbSeeder.Seed(db, hasher);
+    await DbSeeder.Seed(db, hasher, app.Environment.IsDevelopment());
 }
 
 app.MapControllers();
