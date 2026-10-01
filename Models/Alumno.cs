@@ -15,6 +15,9 @@ namespace CENS15_V2.Models
 
         public string Domicilio { get; set; } = string.Empty;
 
+        public bool Eliminado { get; set; }
+        public DateTime? FechaEliminacion { get; set; }
+
         public AlumnoNacimiento DatosNacimiento { get; set; } = null!;
 
         public AlumnoContacto Contacto { get; set; } = null!;

@@ -10,7 +10,7 @@ namespace CENS15_V2.Data
     {
         private const string SeedAdminEmail = "admin@admin.com";
 
-        public static async Task Seed(AppDbContext context, PasswordHasher hasher, bool seedDemoData)
+        public static async Task Seed(AppDbContext context, PasswordHasher hasher)
         {
             var rolesToCreate = new[]
              {
@@ -80,13 +80,24 @@ namespace CENS15_V2.Data
                 await context.SaveChangesAsync();
             }
 
-            if (seedDemoData)
-            {
-                await SeedSampleMateriasYDocentes(context);
-                await SeedCursadasMaterias(context);
-                await VincularAdminConDocente(context);
-                await SeedAlumnosInscriptosParaGarcia(context);
-            }
+        }
+
+        public static async Task SeedDemoData(AppDbContext context, PasswordHasher hasher)
+        {
+            await Seed(context, hasher);
+            await SeedSampleMateriasYDocentes(context);
+            await SeedCursadasMaterias(context);
+            await VincularAdminConDocente(context);
+            await SeedAlumnosInscriptosParaGarcia(context);
+        }
+
+        public static async Task ClearAcademicDemoData(AppDbContext context)
+        {
+            await context.Calificaciones.ExecuteDeleteAsync();
+            await context.CursadasMaterias.ExecuteDeleteAsync();
+            await context.Set<MateriaDocente>().ExecuteDeleteAsync();
+            await context.Materias.ExecuteDeleteAsync();
+            await context.Docentes.ExecuteDeleteAsync();
         }
 
         private static async Task SeedResponsibilities(AppDbContext context)

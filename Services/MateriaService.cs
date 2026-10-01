@@ -4,6 +4,7 @@ using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.MateriasDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CENS15_V2.Services
 {
@@ -42,11 +43,21 @@ namespace CENS15_V2.Services
             var nombre = request.Nombre.Trim();
             var docentes = request.Docentes ?? new List<CreateMateriaDocenteRequest>();
             await ValidateRulesAsync(nombre, request.CursoId, docentes);
+            if (request.CargaHoraria <= 0)
+                throw new InvalidOperationException("La carga horaria de una nueva materia debe ser positiva.");
+            var horarioIds = request.HorarioIds ?? new List<int>();
+            await ValidateScheduleAsync(request.CursoId, request.CargaHoraria, horarioIds);
 
             var materia = new Materia
             {
                 Nombre = nombre,
                 CursoId = request.CursoId,
+                CargaHoraria = request.CargaHoraria,
+                Horarios = horarioIds.Select(h => new HorarioMateria
+                {
+                    CursoId = request.CursoId,
+                    HorarioAnexoId = h
+                }).ToList(),
                 Docentes = docentes.Select(d => new MateriaDocente
                 {
                     DocenteId = d.DocenteId,
@@ -56,7 +67,7 @@ namespace CENS15_V2.Services
             };
 
             _context.Materias.Add(materia);
-            await _context.SaveChangesAsync();
+            await SaveMateriaAsync();
 
             var created = await QueryMaterias()
                 .AsNoTracking()
@@ -69,6 +80,7 @@ namespace CENS15_V2.Services
         {
             var materia = await _context.Materias
                 .Include(m => m.Docentes)
+                .Include(m => m.Horarios)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (materia == null)
             {
@@ -78,9 +90,26 @@ namespace CENS15_V2.Services
             var nombre = request.Nombre.Trim();
             var docentes = request.Docentes ?? new List<CreateMateriaDocenteRequest>();
             await ValidateRulesAsync(nombre, request.CursoId, docentes, id);
+            // Omitted scheduling fields preserve assignments when editing other subject details.
+            var cargaHoraria = request.CargaHoraria ?? materia.CargaHoraria;
+            var horarioIds = request.HorarioIds ?? materia.Horarios.Select(h => h.HorarioAnexoId).ToList();
+            await ValidateScheduleAsync(request.CursoId, cargaHoraria, horarioIds, id);
 
             materia.Nombre = nombre;
             materia.CursoId = request.CursoId;
+            materia.CargaHoraria = cargaHoraria;
+            var removed = materia.Horarios.Where(h => !horarioIds.Contains(h.HorarioAnexoId)).ToList();
+            _context.HorariosMateria.RemoveRange(removed);
+            foreach (var horario in removed) materia.Horarios.Remove(horario);
+            foreach (var horario in materia.Horarios) horario.CursoId = request.CursoId;
+            foreach (var horarioId in horarioIds.Where(h => !materia.Horarios.Any(current => current.HorarioAnexoId == h)))
+            {
+                materia.Horarios.Add(new HorarioMateria
+                {
+                    CursoId = request.CursoId,
+                    HorarioAnexoId = horarioId
+                });
+            }
 
             _context.RemoveRange(materia.Docentes);
             materia.Docentes = docentes.Select(d => new MateriaDocente
@@ -91,7 +120,7 @@ namespace CENS15_V2.Services
                 Activo = d.Activo
             }).ToList();
 
-            await _context.SaveChangesAsync();
+            await SaveMateriaAsync();
             return true;
         }
 
@@ -112,8 +141,57 @@ namespace CENS15_V2.Services
         {
             return _context.Materias
                 .Include(m => m.Curso)
+                .Include(m => m.Horarios)
+                    .ThenInclude(h => h.HorarioAnexo)
                 .Include(m => m.Docentes)
                     .ThenInclude(md => md.Docente);
+        }
+
+        private async Task ValidateScheduleAsync(int cursoId, int cargaHoraria, List<int> horarioIds, int? materiaId = null)
+        {
+            if (cargaHoraria < 0 || (horarioIds.Count > 0 && cargaHoraria == 0))
+                throw new InvalidOperationException("La carga horaria debe ser positiva para asignar horarios.");
+
+            if (horarioIds.Distinct().Count() != horarioIds.Count)
+                throw new InvalidOperationException("No se puede seleccionar la misma hora mas de una vez.");
+
+            if (horarioIds.Count == 0) return;
+            if (horarioIds.Count != cargaHoraria)
+                throw new InvalidOperationException($"Debes seleccionar exactamente {cargaHoraria} horas catedra por semana.");
+
+            var anexoId = await _context.Cursos.Where(c => c.Id == cursoId).Select(c => c.AnexoId).SingleAsync();
+            var validCount = await _context.HorariosAnexo.CountAsync(h => horarioIds.Contains(h.Id)
+                && h.AnexoId == anexoId && h.Tipo == TipoBloqueHorario.Clase);
+            if (validCount != horarioIds.Count)
+                throw new InvalidOperationException("Solo se pueden seleccionar horas de clase de la grilla del anexo del curso.");
+
+            var occupied = await _context.HorariosMateria
+                .Where(h => h.CursoId == cursoId && horarioIds.Contains(h.HorarioAnexoId)
+                    && (!materiaId.HasValue || h.MateriaId != materiaId.Value))
+                .Select(h => h.Materia.Nombre)
+                .FirstOrDefaultAsync();
+            if (occupied != null)
+                throw new InvalidOperationException($"Una de las horas elegidas ya esta ocupada por {occupied} en este curso.");
+        }
+
+        private async Task SaveMateriaAsync()
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+                && pg.SqlState == PostgresErrorCodes.UniqueViolation
+                && pg.ConstraintName == "IX_HorariosMateria_CursoId_HorarioAnexoId")
+            {
+                throw new InvalidOperationException("Una de las horas elegidas acaba de ser ocupada por otra materia del curso. Actualiza la grilla.", ex);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+                && pg.SqlState == PostgresErrorCodes.ForeignKeyViolation
+                && pg.ConstraintName == "FK_HorariosMateria_HorariosAnexo_HorarioAnexoId")
+            {
+                throw new InvalidOperationException("La grilla del anexo cambio mientras guardabas. Actualiza los horarios e intenta nuevamente.", ex);
+            }
         }
 
         private async Task ValidateRulesAsync(string nombre, int cursoId, List<CreateMateriaDocenteRequest> docentes, int? id = null)

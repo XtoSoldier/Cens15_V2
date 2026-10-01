@@ -6,5 +6,6 @@ namespace CENS15_V2.Models
         public string Nombre { get; set; } = string.Empty;
 
         public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
+        public ICollection<HorarioAnexo> Horarios { get; set; } = new List<HorarioAnexo>();
     }
 }

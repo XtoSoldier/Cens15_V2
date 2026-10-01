@@ -63,6 +63,11 @@ namespace CENS15_V2.Services
             var (curso, division) = NormalizeAndValidate(request.Curso, request.Division);
             await ValidateRulesAsync(curso, division, request.IdOrientacion, request.IdAnexo, id);
 
+            if (entity.AnexoId != request.IdAnexo && await _context.HorariosMateria.AnyAsync(h => h.CursoId == id))
+            {
+                throw new InvalidOperationException("Debes quitar las asignaciones horarias de las materias antes de cambiar el anexo del curso.");
+            }
+
             entity.CursoNombre = curso;
             entity.Division = division;
             entity.OrientacionId = request.IdOrientacion;

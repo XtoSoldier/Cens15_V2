@@ -3,6 +3,7 @@ using CENS15_V2.Security;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CENS15_V2.Controllers
 {
@@ -19,9 +20,14 @@ namespace CENS15_V2.Controllers
 
         [HttpGet]
         [Authorize(Policy = ResponsibilityPolicies.AlumnosConsultar)]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get([FromQuery] bool includeDeleted = false)
         {
-            return Ok(await _service.GetAllAsync());
+            if (includeDeleted && !IsAdministrator())
+            {
+                return Forbid();
+            }
+
+            return Ok(await _service.GetAllAsync(includeDeleted));
         }
 
         [HttpGet("{id:int}")]
@@ -63,11 +69,41 @@ namespace CENS15_V2.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        [Authorize(Policy = ResponsibilityPolicies.AlumnosEliminar)]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
+            if (!IsAdministrator()) return Forbid();
+
             var ok = await _service.DeleteAsync(id);
             return ok ? NoContent() : NotFound();
+        }
+
+        [HttpGet("{id:int}/deletion-info")]
+        [Authorize]
+        public async Task<IActionResult> GetDeletionInfo(int id)
+        {
+            if (!IsAdministrator()) return Forbid();
+
+            var info = await _service.GetDeletionInfoAsync(id);
+            return info == null ? NotFound() : Ok(info);
+        }
+
+        [HttpPatch("{id:int}/restore")]
+        [Authorize]
+        public async Task<IActionResult> Restore(int id)
+        {
+            if (!IsAdministrator()) return Forbid();
+
+            var ok = await _service.RestoreAsync(id);
+            return ok ? NoContent() : NotFound();
+        }
+
+        private bool IsAdministrator()
+        {
+            return User.FindAll(ClaimTypes.Role)
+                .Select(claim => claim.Value.Replace(" ", string.Empty))
+                .Any(role => role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                    role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

@@ -25,6 +25,8 @@ namespace CENS15_V2.Data
         public DbSet<Orientacion> Orientaciones { get; set; }
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Anexo> Anexos { get; set; }
+        public DbSet<HorarioAnexo> HorariosAnexo { get; set; }
+        public DbSet<HorarioMateria> HorariosMateria { get; set; }
         public DbSet<Materia> Materias { get; set; }
         public DbSet<Docente> Docentes { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
@@ -43,6 +45,8 @@ namespace CENS15_V2.Data
             ConfigureAlumno(modelBuilder);
             ConfigureLoginActivity(modelBuilder);
             ConfigurePasswordResetCode(modelBuilder);
+            ConfigureHorarioAnexo(modelBuilder);
+            ConfigureHorarioMateria(modelBuilder);
         }
 
         private static void ConfigurePasswordResetCode(ModelBuilder modelBuilder)
@@ -58,6 +62,45 @@ namespace CENS15_V2.Data
 
             modelBuilder.Entity<PasswordResetCode>()
                 .HasIndex(c => c.ExpiresAt);
+        }
+
+        private static void ConfigureHorarioAnexo(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<HorarioAnexo>()
+                .HasOne(h => h.Anexo)
+                .WithMany(a => a.Horarios)
+                .HasForeignKey(h => h.AnexoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HorarioAnexo>()
+                .HasIndex(h => new { h.AnexoId, h.DiaSemana, h.Orden })
+                .IsUnique();
+        }
+
+        private static void ConfigureHorarioMateria(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<HorarioMateria>()
+                .HasOne(h => h.Materia)
+                .WithMany(m => m.Horarios)
+                .HasForeignKey(h => h.MateriaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HorarioMateria>()
+                .HasOne(h => h.Curso)
+                .WithMany()
+                .HasForeignKey(h => h.CursoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HorarioMateria>()
+                .HasOne(h => h.HorarioAnexo)
+                .WithMany()
+                .HasForeignKey(h => h.HorarioAnexoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // A course can have only one subject in each teaching period, including concurrent saves.
+            modelBuilder.Entity<HorarioMateria>()
+                .HasIndex(h => new { h.CursoId, h.HorarioAnexoId })
+                .IsUnique();
         }
 
         private static void ConfigureLoginActivity(ModelBuilder modelBuilder)
@@ -111,6 +154,27 @@ namespace CENS15_V2.Data
 
         private static void ConfigureAlumno(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Alumno>()
+                .HasQueryFilter(a => !a.Eliminado);
+
+            modelBuilder.Entity<AlumnoNacimiento>()
+                .HasQueryFilter(n => !n.Alumno.Eliminado);
+
+            modelBuilder.Entity<AlumnoContacto>()
+                .HasQueryFilter(c => !c.Alumno.Eliminado);
+
+            modelBuilder.Entity<AlumnoDocumento>()
+                .HasQueryFilter(d => !d.Alumno.Eliminado);
+
+            modelBuilder.Entity<Inscripcion>()
+                .HasQueryFilter(i => !i.Alumno.Eliminado);
+
+            modelBuilder.Entity<CursadaMateria>()
+                .HasQueryFilter(cm => !cm.Inscripcion.Alumno.Eliminado);
+
+            modelBuilder.Entity<Calificacion>()
+                .HasQueryFilter(c => !c.CursadaMateria.Inscripcion.Alumno.Eliminado);
+
             modelBuilder.Entity<Alumno>()
                 .HasOne(a => a.DatosNacimiento)
                 .WithOne(n => n.Alumno)
@@ -184,6 +248,10 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Docente>()
                 .HasIndex(d => d.Email)
                 .IsUnique();
+
+            modelBuilder.Entity<Docente>()
+                .Property(d => d.Email)
+                .IsRequired(false);
 
             modelBuilder.Entity<Docente>()
                 .HasIndex(d => d.UserId)

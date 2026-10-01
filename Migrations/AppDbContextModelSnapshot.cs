@@ -69,6 +69,12 @@ namespace CENS15_V2.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Eliminado")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("FechaEliminacion")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateOnly>("FechaNacimiento")
                         .HasColumnType("date");
 
@@ -103,7 +109,6 @@ namespace CENS15_V2.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("NombreEmergencia")
@@ -427,7 +432,6 @@ namespace CENS15_V2.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Nombres")
@@ -446,6 +450,69 @@ namespace CENS15_V2.Migrations
                         .IsUnique();
 
                     b.ToTable("Docentes");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.HorarioAnexo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnexoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DiaSemana")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("HoraFin")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<TimeOnly>("HoraInicio")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnexoId", "DiaSemana", "Orden")
+                        .IsUnique();
+
+                    b.ToTable("HorariosAnexo");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.HorarioMateria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("HorarioAnexoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MateriaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HorarioAnexoId");
+
+                    b.HasIndex("MateriaId");
+
+                    b.HasIndex("CursoId", "HorarioAnexoId")
+                        .IsUnique();
+
+                    b.ToTable("HorariosMateria");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
@@ -484,6 +551,53 @@ namespace CENS15_V2.Migrations
                     b.ToTable("Inscripciones");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.LoginActivity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppVersion")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Platform")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("LoginActivities");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
                 {
                     b.Property<int>("Id")
@@ -491,6 +605,9 @@ namespace CENS15_V2.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CargaHoraria")
+                        .HasColumnType("integer");
 
                     b.Property<int>("CursoId")
                         .HasColumnType("integer");
@@ -557,6 +674,42 @@ namespace CENS15_V2.Migrations
                         .IsUnique();
 
                     b.ToTable("Orientaciones");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.PasswordResetCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("AuthId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.ToTable("PasswordResetCodes");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Permission", b =>
@@ -793,6 +946,44 @@ namespace CENS15_V2.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.HorarioAnexo", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Anexo", "Anexo")
+                        .WithMany("Horarios")
+                        .HasForeignKey("AnexoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Anexo");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.HorarioMateria", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CENS15_V2.Models.HorarioAnexo", "HorarioAnexo")
+                        .WithMany()
+                        .HasForeignKey("HorarioAnexoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CENS15_V2.Models.Materia", "Materia")
+                        .WithMany("Horarios")
+                        .HasForeignKey("MateriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("HorarioAnexo");
+
+                    b.Navigation("Materia");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Inscripcion", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Alumno", "Alumno")
@@ -810,6 +1001,16 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Alumno");
 
                     b.Navigation("Curso");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.LoginActivity", b =>
+                {
+                    b.HasOne("CENS15_V2.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Materia", b =>
@@ -840,6 +1041,17 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Docente");
 
                     b.Navigation("Materia");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.PasswordResetCode", b =>
+                {
+                    b.HasOne("CENS15_V2.Models.Auth", "Auth")
+                        .WithMany()
+                        .HasForeignKey("AuthId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Auth");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.RolePermission", b =>
@@ -915,6 +1127,8 @@ namespace CENS15_V2.Migrations
             modelBuilder.Entity("CENS15_V2.Models.Anexo", b =>
                 {
                     b.Navigation("Cursos");
+
+                    b.Navigation("Horarios");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Auth", b =>
@@ -951,6 +1165,8 @@ namespace CENS15_V2.Migrations
                     b.Navigation("CursadasMaterias");
 
                     b.Navigation("Docentes");
+
+                    b.Navigation("Horarios");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>

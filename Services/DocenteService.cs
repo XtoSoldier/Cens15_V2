@@ -50,7 +50,7 @@ namespace CENS15_V2.Services
         {
             var nombres = request.Nombres.Trim();
             var apellidos = request.Apellidos.Trim();
-            var email = request.Email.Trim();
+            var email = NormalizeEmail(request.Email);
 
             await ValidateRulesAsync(nombres, apellidos, email, request.UserId);
 
@@ -78,7 +78,7 @@ namespace CENS15_V2.Services
 
             var nombres = request.Nombres.Trim();
             var apellidos = request.Apellidos.Trim();
-            var email = request.Email.Trim();
+            var email = NormalizeEmail(request.Email);
 
             await ValidateRulesAsync(nombres, apellidos, email, request.UserId, id);
 
@@ -206,7 +206,7 @@ namespace CENS15_V2.Services
             return result.OrderBy(r => r.CursoNombre).ThenBy(r => r.MateriaNombre);
         }
 
-        private async Task ValidateRulesAsync(string nombres, string apellidos, string email, Guid? userId, int? id = null)
+        private async Task ValidateRulesAsync(string nombres, string apellidos, string? email, Guid? userId, int? id = null)
         {
             if (string.IsNullOrWhiteSpace(nombres))
             {
@@ -218,16 +218,14 @@ namespace CENS15_V2.Services
                 throw new InvalidOperationException("El apellido del docente es obligatorio.");
             }
 
-            if (string.IsNullOrWhiteSpace(email))
+            if (!string.IsNullOrWhiteSpace(email))
             {
-                throw new InvalidOperationException("El email del docente es obligatorio.");
-            }
-
-            var emailExists = await _context.Docentes.AnyAsync(d =>
-                (!id.HasValue || d.Id != id.Value) && d.Email.ToLower() == email.ToLower());
-            if (emailExists)
-            {
-                throw new InvalidOperationException("Ya existe un docente con ese email.");
+                var emailExists = await _context.Docentes.AnyAsync(d =>
+                    (!id.HasValue || d.Id != id.Value) && d.Email != null && d.Email.ToLower() == email.ToLower());
+                if (emailExists)
+                {
+                    throw new InvalidOperationException("Ya existe un docente con ese email.");
+                }
             }
 
             if (!userId.HasValue)
@@ -247,6 +245,11 @@ namespace CENS15_V2.Services
             {
                 throw new InvalidOperationException("El usuario indicado ya está vinculado a otro docente.");
             }
+        }
+
+        private static string? NormalizeEmail(string? email)
+        {
+            return string.IsNullOrWhiteSpace(email) ? null : email.Trim();
         }
     }
 }

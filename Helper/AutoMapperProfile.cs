@@ -7,6 +7,7 @@ using CENS15_V2.Models.DTOs.AlumnosDTOs;
 using CENS15_V2.Models.DTOs.TiposDocumentoAlumnoDTOs;
 using CENS15_V2.Models.DTOs.OrientacionesDTOs;
 using CENS15_V2.Models.DTOs.MateriasDTOs;
+using CENS15_V2.Models.DTOs.HorariosAnexosDTOs;
 using CENS15_V2.Models.DTOs.InscripcionesDTOs;
 using CENS15_V2.Models.DTOs.DocentesDTOs;
 using CENS15_V2.Models.DTOs.CursadasMateriasDTOs;
@@ -60,9 +61,15 @@ namespace CENS15_V2.Helper
                 .ForMember(dest => dest.DocenteId, opt => opt.MapFrom(src => src.DocenteId))
                 .ForMember(dest => dest.Docente, opt => opt.MapFrom(src => $"{src.Docente.Apellidos}, {src.Docente.Nombres}"));
 
+            CreateMap<HorarioAnexo, HorarioAnexoDto>();
             CreateMap<Materia, MateriaDto>()
                 .ForMember(dest => dest.CursoId, opt => opt.MapFrom(src => src.CursoId))
                 .ForMember(dest => dest.Curso, opt => opt.MapFrom(src => src.Curso.CursoNombre))
+                .ForMember(dest => dest.Division, opt => opt.MapFrom(src => src.Curso.Division))
+                .ForMember(dest => dest.Horarios, opt => opt.MapFrom(src => src.Horarios
+                    .OrderBy(h => h.HorarioAnexo.DiaSemana)
+                    .ThenBy(h => h.HorarioAnexo.Orden)
+                    .Select(h => h.HorarioAnexo)))
                 .ForMember(dest => dest.Docentes, opt => opt.MapFrom(src => src.Docentes));
 
             CreateMap<Inscripcion, InscripcionDto>()

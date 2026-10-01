@@ -21,9 +21,9 @@ namespace CENS15_V2.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<AlumnoDto>> GetAllAsync()
+        public async Task<IEnumerable<AlumnoDto>> GetAllAsync(bool includeDeleted = false)
         {
-            var alumnos = await QueryAlumno().AsNoTracking().ToListAsync();
+            var alumnos = await QueryAlumno(includeDeleted).AsNoTracking().ToListAsync();
             return _mapper.Map<IEnumerable<AlumnoDto>>(alumnos);
         }
 
@@ -96,20 +96,68 @@ namespace CENS15_V2.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var alumno = await _context.Alumnos.FindAsync(id);
+            var alumno = await _context.Alumnos.FirstOrDefaultAsync(a => a.Id == id);
             if (alumno == null)
             {
                 return false;
             }
 
-            _context.Alumnos.Remove(alumno);
+            alumno.Eliminado = true;
+            alumno.FechaEliminacion = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
 
-        private IQueryable<Alumno> QueryAlumno()
+        public async Task<AlumnoDeletionInfoDto?> GetDeletionInfoAsync(int id)
         {
-            return _context.Alumnos
+            var alumnoExists = await _context.Alumnos.AnyAsync(a => a.Id == id);
+            if (!alumnoExists)
+            {
+                return null;
+            }
+
+            var inscripciones = _context.Inscripciones.Where(i => i.AlumnoId == id);
+            var inscripcionesCount = await inscripciones.CountAsync();
+            var inscripcionesActivasCount = await inscripciones.CountAsync(i => i.Estado == EstadoInscripcion.Activa);
+            var calificacionesCount = await _context.Calificaciones.CountAsync(c =>
+                c.CursadaMateria.Inscripcion.AlumnoId == id);
+
+            var tieneDatosAcademicos = inscripcionesCount > 0 || calificacionesCount > 0;
+            return new AlumnoDeletionInfoDto
+            {
+                AlumnoId = id,
+                InscripcionesCount = inscripcionesCount,
+                InscripcionesActivasCount = inscripcionesActivasCount,
+                CalificacionesCount = calificacionesCount,
+                Mensaje = tieneDatosAcademicos
+                    ? $"El alumno tiene {inscripcionesCount} inscripción(es) y {calificacionesCount} calificación(es). Se ocultará, pero su historial académico se conservará."
+                    : "El alumno se ocultará de la aplicación. Podrá restaurarse desde el panel de administración."
+            };
+        }
+
+        public async Task<bool> RestoreAsync(int id)
+        {
+            var alumno = await _context.Alumnos
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(a => a.Id == id);
+            if (alumno == null)
+            {
+                return false;
+            }
+
+            alumno.Eliminado = false;
+            alumno.FechaEliminacion = null;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        private IQueryable<Alumno> QueryAlumno(bool includeDeleted = false)
+        {
+            var alumnos = includeDeleted
+                ? _context.Alumnos.IgnoreQueryFilters()
+                : _context.Alumnos;
+
+            return alumnos
                 .Include(a => a.DatosNacimiento)
                 .Include(a => a.Contacto)
                 .Include(a => a.Documentos)
@@ -178,7 +226,7 @@ namespace CENS15_V2.Services
         private async Task ValidateNumeroDocumentoDisponibleAsync(string numeroDocumento, int? alumnoId = null)
         {
             var normalizedNumeroDocumento = numeroDocumento.Trim();
-            var exists = await _context.Alumnos.AnyAsync(a =>
+            var exists = await _context.Alumnos.IgnoreQueryFilters().AnyAsync(a =>
                 a.NumeroDocumento == normalizedNumeroDocumento &&
                 (!alumnoId.HasValue || a.Id != alumnoId.Value));
 

@@ -123,6 +123,7 @@ builder.Services.AddScoped<ITipoDocumentoAlumnoService, TipoDocumentoAlumnoServi
 builder.Services.AddScoped<IOrientacionService, OrientacionService>();
 builder.Services.AddScoped<ICursoService, CursoService>();
 builder.Services.AddScoped<IAnexoService, AnexoService>();
+builder.Services.AddScoped<IHorarioAnexoService, HorarioAnexoService>();
 builder.Services.AddScoped<IMateriaService, MateriaService>();
 builder.Services.AddScoped<IDocenteService, DocenteService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
@@ -140,13 +141,17 @@ var app = builder.Build();
     app.UseSwaggerUI();
 //}
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 var uploadsRoot = Path.Combine(
     app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"),
     "uploads");
 Directory.CreateDirectory(uploadsRoot);
 
+app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -205,7 +210,7 @@ using (var scope = app.Services.CreateScope())
     ");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_AuthId\" ON \"PasswordResetCodes\" (\"AuthId\");");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_ExpiresAt\" ON \"PasswordResetCodes\" (\"ExpiresAt\");");
-    await DbSeeder.Seed(db, hasher, app.Environment.IsDevelopment());
+    await DbSeeder.Seed(db, hasher);
 }
 
 app.MapControllers();

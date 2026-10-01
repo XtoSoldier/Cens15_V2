@@ -11,6 +11,8 @@ namespace CENS15_V2.Models.DTOs.AlumnosDTOs
         public DateOnly FechaNacimiento { get; set; }
         public Genero Genero { get; set; }
         public string Domicilio { get; set; } = string.Empty;
+        public bool Eliminado { get; set; }
+        public DateTime? FechaEliminacion { get; set; }
         public AlumnoNacimientoDto DatosNacimiento { get; set; } = new();
         public AlumnoContactoDto Contacto { get; set; } = new();
         public ICollection<AlumnoDocumentoDto> Documentos { get; set; } = new List<AlumnoDocumentoDto>();
