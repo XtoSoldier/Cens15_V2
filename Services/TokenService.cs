@@ -13,9 +13,11 @@ namespace CENS15.V2.Services
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _config;
-        public TokenService(IConfiguration config)
+        private readonly SessionEpoch _epoch;
+        public TokenService(IConfiguration config, SessionEpoch epoch)
         {
             _config = config;
+            _epoch = epoch;
         }
 
         public AuthResponse CreateToken(Auth auth)
@@ -31,7 +33,9 @@ namespace CENS15.V2.Services
         new Claim(ClaimTypes.NameIdentifier, auth.User.Id.ToString()),
         new Claim(JwtRegisteredClaimNames.Email, auth.Email),
         new Claim(ClaimTypes.Name, auth.User.FirstName),
-        new Claim(ClaimTypes.Role, auth.User.Role.Name),
+         new Claim(ClaimTypes.Role, auth.User.Role.Name),
+         new Claim(SessionEpoch.Claim, _epoch.Current),
+         new Claim(CredentialVersion.Claim, CredentialVersion.Compute(auth.Id, auth.PasswordHash, jwt["Key"]!)),
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
 

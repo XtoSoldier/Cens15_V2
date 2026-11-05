@@ -9,6 +9,7 @@ namespace CENS15_V2.Models.DTOs.AuthDTOs
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        [RegularExpression(@"^[0-9]{6}$")]
         public string Code { get; set; } = string.Empty;
     }
 }

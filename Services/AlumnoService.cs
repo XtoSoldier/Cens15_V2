@@ -36,13 +36,14 @@ namespace CENS15_V2.Services
         public async Task<AlumnoDto> CreateAsync(CreateAlumnoRequest request)
         {
             ValidateGenero(request.Genero);
+            ValidateFechaNacimiento(request.FechaNacimiento);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
             await ValidateNumeroDocumentoDisponibleAsync(request.NumeroDocumento);
 
             var alumno = _mapper.Map<Alumno>(request);
             alumno.Nombres = FormatNombreApellido(alumno.Nombres);
             alumno.Apellidos = FormatNombreApellido(alumno.Apellidos);
-            alumno.NumeroDocumento = request.NumeroDocumento.Trim();
+            alumno.NumeroDocumento = string.IsNullOrWhiteSpace(request.NumeroDocumento) ? null : request.NumeroDocumento.Trim();
             NormalizeDocumentos(alumno.Documentos);
             _context.Alumnos.Add(alumno);
             await _context.SaveChangesAsync();
@@ -54,6 +55,7 @@ namespace CENS15_V2.Services
         public async Task<bool> UpdateAsync(int id, UpdateAlumnoRequest request)
         {
             ValidateGenero(request.Genero);
+            ValidateFechaNacimiento(request.FechaNacimiento);
             await ValidateTipoDocumentosAsync(request.Documentos.Select(d => d.TipoDocumentoAlumnoId));
             await ValidateNumeroDocumentoDisponibleAsync(request.NumeroDocumento, id);
 
@@ -65,7 +67,7 @@ namespace CENS15_V2.Services
 
             alumno.Nombres = FormatNombreApellido(request.Nombres);
             alumno.Apellidos = FormatNombreApellido(request.Apellidos);
-            alumno.NumeroDocumento = request.NumeroDocumento.Trim();
+            alumno.NumeroDocumento = string.IsNullOrWhiteSpace(request.NumeroDocumento) ? null : request.NumeroDocumento.Trim();
             alumno.FechaNacimiento = request.FechaNacimiento;
             alumno.Genero = request.Genero;
             alumno.Domicilio = request.Domicilio;
@@ -165,11 +167,19 @@ namespace CENS15_V2.Services
         }
 
 
-        private static void ValidateGenero(Genero genero)
+        private static void ValidateGenero(Genero? genero)
         {
-            if (!Enum.IsDefined(typeof(Genero), genero))
+            if (genero.HasValue && !Enum.IsDefined(typeof(Genero), genero.Value))
             {
                 throw new InvalidOperationException("El género debe ser Varon o Mujer.");
+            }
+        }
+
+        private static void ValidateFechaNacimiento(DateOnly? fechaNacimiento)
+        {
+            if (fechaNacimiento.HasValue && (fechaNacimiento.Value == DateOnly.MinValue || fechaNacimiento.Value > DateOnly.FromDateTime(DateTime.UtcNow)))
+            {
+                throw new InvalidOperationException("La fecha de nacimiento debe ser valida y no futura, o quedar vacia.");
             }
         }
 
@@ -223,8 +233,13 @@ namespace CENS15_V2.Services
             }
         }
 
-        private async Task ValidateNumeroDocumentoDisponibleAsync(string numeroDocumento, int? alumnoId = null)
+        private async Task ValidateNumeroDocumentoDisponibleAsync(string? numeroDocumento, int? alumnoId = null)
         {
+            if (string.IsNullOrWhiteSpace(numeroDocumento))
+            {
+                return;
+            }
+
             var normalizedNumeroDocumento = numeroDocumento.Trim();
             var exists = await _context.Alumnos.IgnoreQueryFilters().AnyAsync(a =>
                 a.NumeroDocumento == normalizedNumeroDocumento &&

@@ -75,13 +75,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnAuthenticationFailed = ctx =>
             {
-                Console.WriteLine("JWT FAIL ? " + ctx.Exception.Message);
+                Console.WriteLine("JWT validation failed.");
                 return Task.CompletedTask;
             },
-            OnTokenValidated = ctx =>
+            OnTokenValidated = async ctx =>
             {
-                Console.WriteLine("JWT OK");
-                return Task.CompletedTask;
+                var epoch = ctx.HttpContext.RequestServices.GetRequiredService<SessionEpoch>();
+                var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                if (!await SessionPrincipalValidator.ValidateAsync(ctx.Principal, db, epoch.Current, jwt["Key"]!, ctx.HttpContext.RequestAborted))
+                    ctx.Fail("Sesion invalidada. Ingrese nuevamente.");
             }
         };
     });
@@ -131,8 +133,31 @@ builder.Services.AddScoped<ICursadaMateriaService, CursadaMateriaService>();
 builder.Services.AddScoped<ICalificacionService, CalificacionService>();
 builder.Services.AddScoped<ICertificadoTemplateService, CertificadoTemplateService>();
 builder.Services.AddScoped<ILoginActivityService, LoginActivityService>();
+builder.Services.AddScoped<TransferenciaService>();
+builder.Services.AddSingleton<CheckpointGate>();
+builder.Services.AddSingleton<CheckpointStorage>();
+builder.Services.AddSingleton<SessionEpoch>();
+builder.Services.AddSingleton<CheckpointPreviews>();
+builder.Services.AddScoped<CheckpointModel>();
+builder.Services.AddScoped<CheckpointRecovery>();
+builder.Services.AddScoped<CheckpointService>();
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    var fallback = options.InvalidModelStateResponseFactory;
+    options.InvalidModelStateResponseFactory = context =>
+        context.HttpContext.Request.Path.StartsWithSegments("/api/checkpoints", StringComparison.OrdinalIgnoreCase)
+            ? new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new { message = "Solicitud de checkpoint invalida o incompleta." })
+            : fallback(context);
+});
 
 var app = builder.Build();
+
+// Recovery precedes migrations, seeding, static-file providers and all request handling.
+using (var recoveryScope = app.Services.CreateScope())
+{
+    await recoveryScope.ServiceProvider.GetRequiredService<CheckpointRecovery>().InitializeAsync();
+}
+app.UseMiddleware<CheckpointGateMiddleware>();
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
@@ -210,7 +235,9 @@ using (var scope = app.Services.CreateScope())
     ");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_AuthId\" ON \"PasswordResetCodes\" (\"AuthId\");");
     await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_ExpiresAt\" ON \"PasswordResetCodes\" (\"ExpiresAt\");");
-    await DbSeeder.Seed(db, hasher);
+    // A full restore must not silently acquire seeded roles/responsibilities on its next restart.
+    if (!await scope.ServiceProvider.GetRequiredService<CheckpointRecovery>().HasRestoredAsync())
+        await DbSeeder.Seed(db, hasher);
 }
 
 app.MapControllers();

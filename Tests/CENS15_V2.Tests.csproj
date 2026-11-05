@@ -14,5 +14,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="..\CENS15_V2.csproj" />
+    <ProjectReference Include="..\Tools\AlumnoCsvImport\AlumnoCsvImport.csproj" />
   </ItemGroup>
 </Project>

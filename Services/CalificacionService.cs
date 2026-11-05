@@ -38,9 +38,15 @@ namespace CENS15_V2.Services
                 RecuperacionDiciembre = request.RecuperacionDiciembre,
                 RecuperacionMarzo = request.RecuperacionMarzo,
                 CalificacionFinal = request.CalificacionFinal,
-                Estado = request.Estado
+                Estado = request.Estado,
+                C1Condicion = request.C1Condicion,
+                C2Condicion = request.C2Condicion,
+                DiciembreCondicion = request.DiciembreCondicion,
+                MarzoCondicion = request.MarzoCondicion,
+                RecuperacionExcepcional = request.RecuperacionExcepcional
             };
 
+            CalificacionRules.Apply(entity);
             _context.Calificaciones.Add(entity);
             await _context.SaveChangesAsync();
 
@@ -71,14 +77,16 @@ namespace CENS15_V2.Services
 
         public async Task<bool> UpdateAsync(int id, UpdateCalificacionRequest request)
         {
-            var entity = await _context.Calificaciones.FirstOrDefaultAsync(c => c.Id == id);
-            if (entity == null)
+            var existing = await _context.Calificaciones.FirstOrDefaultAsync(c => c.Id == id);
+            if (existing == null)
             {
                 return false;
             }
 
             var materiaNombre = await ValidateAndGetMateriaNombreAsync(request.CursadaMateriaId, id);
 
+            // Validate a copy so rejected requests leave the tracked record unchanged.
+            var entity = (Calificacion)_context.Entry(existing).CurrentValues.ToObject();
             entity.CursadaMateriaId = request.CursadaMateriaId;
             entity.MateriaNombre = materiaNombre;
             entity.C1Nota1 = request.C1Nota1;
@@ -94,7 +102,14 @@ namespace CENS15_V2.Services
             entity.RecuperacionMarzo = request.RecuperacionMarzo;
             entity.CalificacionFinal = request.CalificacionFinal;
             entity.Estado = request.Estado;
+            entity.C1Condicion = request.C1Condicion;
+            entity.C2Condicion = request.C2Condicion;
+            entity.DiciembreCondicion = request.DiciembreCondicion;
+            entity.MarzoCondicion = request.MarzoCondicion;
+            entity.RecuperacionExcepcional = request.RecuperacionExcepcional;
 
+            CalificacionRules.Apply(entity);
+            _context.Entry(existing).CurrentValues.SetValues(entity);
             await _context.SaveChangesAsync();
             return true;
         }

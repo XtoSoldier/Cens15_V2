@@ -310,6 +310,15 @@ namespace CENS15_V2.Data
                 .Property(c => c.Estado)
                 .HasConversion<string>();
 
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.C1Condicion).HasDefaultValue(CondicionNota.Numerica);
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.C2Condicion).HasDefaultValue(CondicionNota.Numerica);
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.DiciembreCondicion).HasDefaultValue(CondicionNota.Numerica);
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.MarzoCondicion).HasDefaultValue(CondicionNota.Numerica);
+
             modelBuilder.Entity<CursadaMateria>()
                 .Property(cm => cm.MateriaNombre)
                 .HasDefaultValue(string.Empty);

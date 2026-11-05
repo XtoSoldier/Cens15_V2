@@ -37,7 +37,7 @@ namespace CENS15_V2.Controllers
             try
             {
                 await _service.RequestInitialAccessAsync(request);
-                return Ok(new { message = "Si el correo está registrado, se envió un email con la clave de acceso inicial." });
+                return Ok(new { message = "Si el correo está registrado, se envió un código de acceso único." });
             }
             catch (InvalidOperationException ex)
             {

@@ -33,7 +33,7 @@ namespace CENS15_V2.Services
                 .ThenInclude(rr => rr.Responsibility)
                 .FirstOrDefaultAsync(x => x.Email == request.Email);
 
-            if (auth == null)
+            if (auth == null || auth.User == null || !auth.User.Status)
                 return null;
 
             if (!_hasher.Verify(request.Password, auth.PasswordHash))
@@ -81,27 +81,8 @@ namespace CENS15_V2.Services
             return _tokenService.CreateToken(auth);
         }
 
-        public async Task RequestInitialAccessAsync(InitialAccessRequest request)
-        {
-            var email = request.Email.Trim();
-            var auth = await _context.Auths
-                .Include(a => a.User)
-                .FirstOrDefaultAsync(x => x.Email.ToLower() == email.ToLower());
-
-            if (auth == null || !auth.User.Status)
-            {
-                return;
-            }
-
-            var temporaryPassword = GenerateTemporaryPassword();
-            await _emailService.SendInitialAccessAsync(auth, temporaryPassword);
-
-            auth.PasswordHash = _hasher.Hash(temporaryPassword);
-            auth.MustChangePassword = true;
-            auth.InitialAccessSentAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-        }
+        public Task RequestInitialAccessAsync(InitialAccessRequest request) =>
+            RequestPasswordResetAsync(new PasswordResetRequest { Email = request.Email });
 
         public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
@@ -129,41 +110,43 @@ namespace CENS15_V2.Services
 
         public async Task RequestPasswordResetAsync(PasswordResetRequest request)
         {
-            var email = request.Email.Trim();
-            var auth = await _context.Auths
-                .Include(a => a.User)
-                .FirstOrDefaultAsync(x => x.Email.ToLower() == email.ToLower());
-
-            if (auth == null || !auth.User.Status)
-            {
-                return;
-            }
-
-            var pendingCodes = await _context.PasswordResetCodes
-                .Where(c => c.AuthId == auth.Id && c.UsedAt == null && c.ExpiresAt > DateTime.UtcNow)
-                .ToListAsync();
-            foreach (var pendingCode in pendingCodes)
-            {
-                pendingCode.UsedAt = DateTime.UtcNow;
-            }
-
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync() : null;
+            var auth = await GetActiveAuthForUpdateAsync(request.Email);
+            if (auth == null) return;
             var code = GenerateVerificationCode();
+            var codeHash = _hasher.Hash(code);
+            try
+            {
+                await _emailService.SendPasswordResetCodeAsync(auth, code);
+            }
+            catch (Exception)
+            {
+                // Provider responses may contain addresses or credentials. Do not expose them.
+                throw new InvalidOperationException("No se pudo enviar el codigo. Intenta nuevamente.");
+            }
+
+            var now = DateTime.UtcNow;
+            var pendingCodes = await _context.PasswordResetCodes
+                .Where(c => c.AuthId == auth.Id && c.UsedAt == null)
+                .ToListAsync();
+            foreach (var pendingCode in pendingCodes) pendingCode.UsedAt = now;
             _context.PasswordResetCodes.Add(new PasswordResetCode
             {
                 AuthId = auth.Id,
-                CodeHash = _hasher.Hash(code),
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                CodeHash = codeHash,
+                CreatedAt = now,
+                ExpiresAt = now.AddMinutes(15),
                 Attempts = 0
             });
 
-            await _emailService.SendPasswordResetCodeAsync(auth, code);
             await _context.SaveChangesAsync();
+            if (transaction != null) await transaction.CommitAsync();
         }
 
         public async Task ValidatePasswordResetCodeAsync(ValidatePasswordResetCodeRequest request)
         {
-            await ValidateResetCodeAsync(request.Email, request.Code, incrementAttempts: true);
+            await ValidateResetCodeAsync(request.Email, request.Code);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
@@ -173,31 +156,39 @@ namespace CENS15_V2.Services
                 throw new InvalidOperationException("La nueva contraseña debe tener al menos 6 caracteres.");
             }
 
-            var (auth, code) = await ValidateResetCodeAsync(request.Email, request.Code, incrementAttempts: true);
-
-            code.UsedAt = DateTime.UtcNow;
-            auth.PasswordHash = _hasher.Hash(request.NewPassword);
-            auth.MustChangePassword = false;
-            await _context.SaveChangesAsync();
+            await ValidateResetCodeAsync(request.Email, request.Code, request.NewPassword);
         }
 
-        private async Task<(Auth Auth, PasswordResetCode Code)> ValidateResetCodeAsync(string email, string codeValue, bool incrementAttempts)
+        private async Task<Auth?> GetActiveAuthForUpdateAsync(string email)
         {
-            var normalizedEmail = email.Trim();
-            var auth = await _context.Auths
-                .FirstOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail.ToLower());
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            // Begin the caller's transaction before this query. All OTP operations lock the same row.
+            var query = _context.Database.IsRelational()
+                ? _context.Auths.FromSqlInterpolated($"SELECT * FROM \"Auths\" WHERE lower(\"Email\") = {normalizedEmail} FOR UPDATE")
+                : _context.Auths.Where(a => a.Email.ToLower() == normalizedEmail);
+            var auth = await query.SingleOrDefaultAsync();
+            if (auth == null) return null;
+            await _context.Entry(auth).Reference(a => a.User).LoadAsync();
+            return auth.User?.Status == true ? auth : null;
+        }
 
+        private async Task ValidateResetCodeAsync(string email, string codeValue, string? newPassword = null)
+        {
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync() : null;
+            var auth = await GetActiveAuthForUpdateAsync(email);
             if (auth == null)
             {
                 throw new InvalidOperationException("No hay un código vigente para ese correo.");
             }
 
             var code = await _context.PasswordResetCodes
-                .Where(c => c.AuthId == auth.Id && c.UsedAt == null)
+                .Where(c => c.AuthId == auth.Id)
                 .OrderByDescending(c => c.CreatedAt)
+                .ThenByDescending(c => c.Id)
                 .FirstOrDefaultAsync();
 
-            if (code == null)
+            if (code == null || code.UsedAt != null)
             {
                 throw new InvalidOperationException("No hay un código vigente para ese correo.");
             }
@@ -212,21 +203,30 @@ namespace CENS15_V2.Services
                 throw new InvalidOperationException("Se agotaron los intentos. Solicitá un nuevo código.");
             }
 
-            if (!_hasher.Verify(codeValue.Trim(), code.CodeHash))
+            if (codeValue.Length != 6 || codeValue.Any(c => c < '0' || c > '9') || !_hasher.Verify(codeValue, code.CodeHash))
             {
-                if (incrementAttempts)
+                code.Attempts += 1;
+                await _context.SaveChangesAsync();
+                // A rejected request must still persist its attempt, not roll it back on disposal.
+                if (transaction != null) await transaction.CommitAsync();
+                if (code.Attempts >= 5)
                 {
-                    code.Attempts += 1;
-                    await _context.SaveChangesAsync();
-                    if (code.Attempts >= 5)
-                    {
-                        throw new InvalidOperationException("Se agotaron los intentos. Solicitá un nuevo código.");
-                    }
+                    throw new InvalidOperationException("Se agotaron los intentos. Solicitá un nuevo código.");
                 }
                 throw new InvalidOperationException("El código ingresado es incorrecto.");
             }
 
-            return (auth, code);
+            if (newPassword != null)
+            {
+                var unusedCodes = await _context.PasswordResetCodes
+                    .Where(c => c.AuthId == auth.Id && c.UsedAt == null).ToListAsync();
+                var now = DateTime.UtcNow;
+                foreach (var unusedCode in unusedCodes) unusedCode.UsedAt = now;
+                auth.PasswordHash = _hasher.Hash(newPassword);
+                auth.MustChangePassword = false;
+                await _context.SaveChangesAsync();
+            }
+            if (transaction != null) await transaction.CommitAsync();
         }
 
         private static string GenerateTemporaryPassword()

@@ -75,10 +75,10 @@ namespace CENS15_V2.Migrations
                     b.Property<DateTime?>("FechaEliminacion")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly>("FechaNacimiento")
+                    b.Property<DateOnly?>("FechaNacimiento")
                         .HasColumnType("date");
 
-                    b.Property<int>("Genero")
+                    b.Property<int?>("Genero")
                         .HasColumnType("integer");
 
                     b.Property<string>("Nombres")
@@ -86,7 +86,6 @@ namespace CENS15_V2.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("NumeroDocumento")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -244,6 +243,11 @@ namespace CENS15_V2.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("C1Condicion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<decimal?>("C1Nota1")
                         .HasColumnType("numeric");
 
@@ -255,6 +259,11 @@ namespace CENS15_V2.Migrations
 
                     b.Property<decimal?>("C1Promedio")
                         .HasColumnType("numeric");
+
+                    b.Property<int>("C2Condicion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<decimal?>("C2Nota1")
                         .HasColumnType("numeric");
@@ -274,9 +283,19 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("CursadaMateriaId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("DiciembreCondicion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("MarzoCondicion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("MateriaNombre")
                         .IsRequired()
@@ -289,6 +308,9 @@ namespace CENS15_V2.Migrations
 
                     b.Property<decimal?>("RecuperacionDiciembre")
                         .HasColumnType("numeric");
+
+                    b.Property<int?>("RecuperacionExcepcional")
+                        .HasColumnType("integer");
 
                     b.Property<decimal?>("RecuperacionMarzo")
                         .HasColumnType("numeric");

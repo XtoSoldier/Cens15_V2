@@ -148,8 +148,8 @@ namespace CENS15_V2.Services
                 ["FECHA_EMISION"] = DateTime.Today.ToString("d 'de' MMMM 'de' yyyy", new CultureInfo("es-AR")),
                 ["nombre_alumno"] = FormatAlumnoNombre(alumno),
                 ["ALUMNO_NOMBRE"] = FormatAlumnoNombre(alumno),
-                ["numero_documento"] = alumno.NumeroDocumento,
-                ["NUMERO_DOCUMENTO"] = alumno.NumeroDocumento,
+                ["numero_documento"] = alumno.NumeroDocumento ?? string.Empty,
+                ["NUMERO_DOCUMENTO"] = alumno.NumeroDocumento ?? string.Empty,
                 ["curso"] = inscripcionActual?.Curso.CursoNombre ?? string.Empty,
                 ["CURSO"] = inscripcionActual?.Curso.CursoNombre ?? string.Empty,
                 ["division"] = inscripcionActual?.Curso.Division ?? string.Empty,
@@ -270,11 +270,11 @@ namespace CENS15_V2.Services
                         var calificacion = cursada.Calificacion;
                         sb.Append("<tr>");
                         sb.Append(BuildTd(Encode(GetMateriaNombre(cursada)), "left", "asignatura"));
-                        sb.Append(BuildTd(FormatNota(calificacion?.C1Promedio)));
-                        sb.Append(BuildTd(FormatNota(calificacion?.C2Promedio)));
+                        sb.Append(BuildTd(FormatNota(calificacion?.C1Promedio, calificacion?.C1Condicion ?? CondicionNota.Numerica)));
+                        sb.Append(BuildTd(FormatNota(calificacion?.C2Promedio, calificacion?.C2Condicion ?? CondicionNota.Numerica)));
                         sb.Append(BuildTd(FormatNota(calificacion?.PromedioAnual)));
-                        sb.Append(BuildTd(FormatNota(calificacion?.RecuperacionDiciembre)));
-                        sb.Append(BuildTd(FormatNota(calificacion?.RecuperacionMarzo)));
+                        sb.Append(BuildTd(FormatNota(calificacion?.RecuperacionDiciembre, calificacion?.DiciembreCondicion ?? CondicionNota.Numerica)));
+                        sb.Append(BuildTd(FormatNota(calificacion?.RecuperacionMarzo, calificacion?.MarzoCondicion ?? CondicionNota.Numerica)));
                         sb.Append(BuildTd(FormatNota(calificacion?.CalificacionFinal)));
                         sb.Append(BuildTd(calificacion == null ? "-" : Encode(FormatEstado(calificacion.Estado))));
                         sb.Append("</tr>");
@@ -342,6 +342,16 @@ namespace CENS15_V2.Services
         private static string FormatNota(decimal? nota)
         {
             return nota.HasValue ? nota.Value.ToString("0.##", CultureInfo.InvariantCulture) : "-";
+        }
+
+        private static string FormatNota(decimal? nota, CondicionNota condicion)
+        {
+            return condicion switch
+            {
+                CondicionNota.Ausente => "A (Ausente)",
+                CondicionNota.SinCalificar => "S/C (Sin Calificar)",
+                _ => FormatNota(nota)
+            };
         }
 
         private static string FormatEstado(EstadoMateria estado)
