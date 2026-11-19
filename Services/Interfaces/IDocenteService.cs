@@ -12,5 +12,6 @@ namespace CENS15_V2.Services.Interfaces
         Task<DocenteDto?> GetByUserIdAsync(Guid userId);
         Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId);
         Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasActivasConAlumnosByUserIdAsync(Guid userId);
+        Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasParaCalificarAsync();
     }
 }

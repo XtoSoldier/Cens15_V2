@@ -56,6 +56,9 @@ namespace CENS15_V2.Helper
 
             CreateMap<Docente, DocenteDto>()
                 .ForMember(dest => dest.Materias, opt => opt.MapFrom(src => src.Materias));
+            CreateMap<Preceptor, CENS15_V2.Models.DTOs.PreceptoresDTOs.PreceptorDto>()
+                .ForMember(dest => dest.Cursos, opt => opt.MapFrom(src => src.Cursos
+                    .OrderBy(c => c.CursoNombre).ThenBy(c => c.Division).ThenBy(c => c.Id)));
 
             CreateMap<MateriaDocente, MateriaDocenteDto>()
                 .ForMember(dest => dest.DocenteId, opt => opt.MapFrom(src => src.DocenteId))
@@ -88,7 +91,9 @@ namespace CENS15_V2.Helper
                 .ForMember(dest => dest.IdOrientacion, opt => opt.MapFrom(src => src.OrientacionId))
                 .ForMember(dest => dest.IdAnexo, opt => opt.MapFrom(src => src.AnexoId))
                 .ForMember(dest => dest.OrientacionNombreCorto, opt => opt.MapFrom(src => src.Orientacion.NombreCorto))
-                .ForMember(dest => dest.AnexoNombre, opt => opt.MapFrom(src => src.Anexo.Nombre));
+                .ForMember(dest => dest.AnexoNombre, opt => opt.MapFrom(src => src.Anexo.Nombre))
+                .ForMember(dest => dest.PreceptorNombre, opt => opt.MapFrom(src => src.Preceptor == null
+                    ? null : (src.Preceptor.Nombres + " " + src.Preceptor.Apellidos).Trim()));
         }
     }
 }

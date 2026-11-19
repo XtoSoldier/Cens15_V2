@@ -35,12 +35,20 @@ public sealed class CheckpointStorage : IDisposable
         var lockPath = Path.Combine(Root, "instance.lock");
         EnsureNoLinks(lockPath);
         instanceLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-        var keyPath = Path.Combine(Root, "server.key");
-        if (!File.Exists(keyPath) && (Directory.EnumerateFiles(Root, "*.checkpoint").Any() || File.Exists(Path.Combine(Root, "restore.journal"))))
-            throw new InvalidOperationException("Falta la clave persistente de checkpoints. Recupere server.key antes de iniciar.");
-        if (!File.Exists(keyPath)) AtomicWrite(keyPath, RandomNumberGenerator.GetBytes(32));
-        key = File.ReadAllBytes(keyPath);
-        if (key.Length != 32) throw new InvalidOperationException("Clave de checkpoints invalida.");
+        try
+        {
+            var keyPath = Path.Combine(Root, "server.key");
+            if (!File.Exists(keyPath) && (Directory.EnumerateFiles(Root, "*.checkpoint").Any() || File.Exists(Path.Combine(Root, "restore.journal"))))
+                throw new InvalidOperationException("Falta la clave persistente de checkpoints. Recupere server.key antes de iniciar.");
+            if (!File.Exists(keyPath)) AtomicWrite(keyPath, RandomNumberGenerator.GetBytes(32));
+            key = File.ReadAllBytes(keyPath);
+            if (key.Length != 32) throw new InvalidOperationException("Clave de checkpoints invalida.");
+        }
+        catch
+        {
+            instanceLock.Dispose();
+            throw;
+        }
     }
 
     public void Dispose()

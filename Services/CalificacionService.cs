@@ -39,6 +39,8 @@ namespace CENS15_V2.Services
                 RecuperacionMarzo = request.RecuperacionMarzo,
                 CalificacionFinal = request.CalificacionFinal,
                 Estado = request.Estado,
+                DisposicionEquivalencia = request.DisposicionEquivalencia,
+                DesdePase = request.DesdePase,
                 C1Condicion = request.C1Condicion,
                 C2Condicion = request.C2Condicion,
                 DiciembreCondicion = request.DiciembreCondicion,
@@ -86,6 +88,11 @@ namespace CENS15_V2.Services
             var materiaNombre = await ValidateAndGetMateriaNombreAsync(request.CursadaMateriaId, id);
 
             // Validate a copy so rejected requests leave the tracked record unchanged.
+            if (existing.Estado == EstadoMateria.AprobadoPorEquivalencia &&
+                request.Estado != EstadoMateria.AprobadoPorEquivalencia &&
+                !request.DesdePase.HasValue && request.DisposicionEquivalencia == null)
+                throw new InvalidOperationException("Para quitar la equivalencia debe enviar DesdePase explicitamente.");
+
             var entity = (Calificacion)_context.Entry(existing).CurrentValues.ToObject();
             entity.CursadaMateriaId = request.CursadaMateriaId;
             entity.MateriaNombre = materiaNombre;
@@ -102,6 +109,18 @@ namespace CENS15_V2.Services
             entity.RecuperacionMarzo = request.RecuperacionMarzo;
             entity.CalificacionFinal = request.CalificacionFinal;
             entity.Estado = request.Estado;
+            entity.DesdePase = request.DesdePase ?? existing.DesdePase;
+            entity.DisposicionEquivalencia = entity.Estado == EstadoMateria.AprobadoPorEquivalencia
+                ? request.DisposicionEquivalencia ?? (existing.Estado == EstadoMateria.AprobadoPorEquivalencia
+                    ? existing.DisposicionEquivalencia : null) : null;
+            if (existing.Estado == EstadoMateria.AprobadoPorEquivalencia &&
+                entity.Estado != EstadoMateria.AprobadoPorEquivalencia)
+            {
+                // Removing equivalence must recalculate, not reuse a manual approval payload.
+                entity.Estado = EstadoMateria.EnCurso;
+                entity.PromedioAnual = null;
+                entity.CalificacionFinal = null;
+            }
             entity.C1Condicion = request.C1Condicion;
             entity.C2Condicion = request.C2Condicion;
             entity.DiciembreCondicion = request.DiciembreCondicion;
@@ -116,6 +135,7 @@ namespace CENS15_V2.Services
 
         public async Task<bool> CanUserCalificarCursadaAsync(Guid userId, int cursadaMateriaId)
         {
+            if (!await _context.Users.AnyAsync(u => u.Id == userId && u.Status)) return false;
             var docenteId = await _context.Docentes
                 .Where(d => d.UserId == userId)
                 .Select(d => (int?)d.Id)
@@ -123,11 +143,13 @@ namespace CENS15_V2.Services
 
             if (!docenteId.HasValue)
             {
-                return true;
+                return await _context.Users.AnyAsync(u => u.Id == userId && u.Status
+                    && u.Role.Name.Trim().ToUpper() != "DOCENTE"
+                    && u.Role.Name.Trim().ToUpper() != "PRECEPTOR");
             }
 
             var materiaId = await _context.CursadasMaterias
-                .Where(cm => cm.Id == cursadaMateriaId)
+                .Where(cm => cm.Id == cursadaMateriaId && cm.Materia.CursoId == cm.Inscripcion.CursoId)
                 .Select(cm => (int?)cm.MateriaId)
                 .FirstOrDefaultAsync();
 

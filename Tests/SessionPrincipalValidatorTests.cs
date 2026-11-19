@@ -21,6 +21,38 @@ namespace CENS15_V2.Tests;
 public sealed class SessionPrincipalValidatorTests
 {
     private const string JwtKey = "session-tests-signing-key-not-for-production";
+
+    [Theory]
+    [InlineData("es-AR")]
+    [InlineData("en-US")]
+    public void TokenDurationUsesTheSameInvariantFormatAsStartupValidation(string culture)
+    {
+        using var f = new Fixture();
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Key"] = JwtKey, ["Jwt:DurationInMinutes"] = "1.5", ["Jwt:Issuer"] = "test", ["Jwt:Audience"] = "test"
+            }).Build();
+            var before = DateTime.UtcNow;
+            var response = new CENS15.V2.Services.TokenService(config, f.Epoch).CreateToken(f.User.Auth);
+            Assert.InRange(response.Expiration, before.AddSeconds(90), DateTime.UtcNow.AddSeconds(90));
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
+    }
+
+    [Fact]
+    public void RestartPreservesEpochAndExplicitRotationPersistsAcrossRestart()
+    {
+        using var f = new Fixture();
+        var original = f.Epoch.Current;
+        Assert.Equal(original, new SessionEpoch(f.Storage).Current);
+        f.Epoch.Rotate();
+        Assert.NotEqual(original, f.Epoch.Current);
+        Assert.Equal(f.Epoch.Current, new SessionEpoch(f.Storage).Current);
+    }
     private sealed class EnvironmentStub(string root) : IWebHostEnvironment
     {
         public string ApplicationName { get; set; } = "SessionTests";
@@ -117,7 +149,19 @@ public sealed class SessionPrincipalValidatorTests
             case "extra-version": ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim(CredentialVersion.Claim, "other")); break;
         }
         await f.Db.SaveChangesAsync();
-        Assert.Equal(expected, await SessionPrincipalValidator.ValidateAsync(principal, f.Db, f.Epoch.Current, JwtKey));
+        var rejections = new List<string>();
+        Assert.Equal(expected, await SessionPrincipalValidator.ValidateAsync(principal, f.Db, f.Epoch.Current, JwtKey,
+            onRejected: rejections.Add));
+        if (expected) Assert.Empty(rejections);
+        else Assert.Equal(change switch
+        {
+            "inactive" or "missing-user" or "missing-auth" => "account_unavailable",
+            "role" or "email" => "identity_changed",
+            "grants-removed" or "grants-added" => "responsibilities_changed",
+            "epoch" => "session_epoch_changed",
+            "password-changed" => "credential_changed",
+            _ => "invalid_claims"
+        }, Assert.Single(rejections));
         Assert.False(await SessionPrincipalValidator.ValidateAsync(null, f.Db, f.Epoch.Current, JwtKey));
     }
 
@@ -195,9 +239,10 @@ public sealed class SessionPrincipalValidatorTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task PasswordChangeRevokesOnlyThatUsersTokensAndPreservesGlobalEpoch(bool reset)
+    [InlineData("change")]
+    [InlineData("reset")]
+    [InlineData("admin")]
+    public async Task PasswordChangeRevokesOnlyThatUsersTokensAndPreservesGlobalEpoch(string flow)
     {
         using var f = new Fixture();
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -226,7 +271,16 @@ public sealed class SessionPrincipalValidatorTests
         Assert.True(await SessionPrincipalValidator.ValidateAsync(unrelatedPrincipal, f.Db, epoch, JwtKey));
         var email = new CapturingEmail();
         var service = new AuthService(f.Db, tokens, hasher, email);
-        if (reset)
+        if (flow == "admin")
+        {
+            var users = new UserService(f.Db, hasher);
+            Assert.True(await users.UpdateAsync(f.User.Id, new CENS15_V2.Models.DTOs.UsersDTOs.UpdateUserRequest
+            {
+                FirstName = f.User.FirstName, LastName = f.User.LastName, RoleId = f.User.RoleId,
+                Password = " new-password "
+            }));
+        }
+        else if (flow == "reset")
         {
             await service.RequestPasswordResetAsync(new PasswordResetRequest { Email = f.User.Auth.Email });
             Assert.True(await SessionPrincipalValidator.ValidateAsync(oldPrincipal, f.Db, epoch, JwtKey));
@@ -242,6 +296,14 @@ public sealed class SessionPrincipalValidatorTests
         Assert.True(await SessionPrincipalValidator.ValidateAsync(unrelatedPrincipal, f.Db, epoch, JwtKey));
         Assert.True(await SessionPrincipalValidator.ValidateAsync(Issue(f.User.Auth), f.Db, epoch, JwtKey));
         Assert.False(await SessionPrincipalValidator.ValidateAsync(Issue(f.User.Auth), f.Db, epoch, "different-signing-key"));
+        Assert.Null(await service.Login(new LoginRequest { Email = f.User.Auth.Email, Password = "old-password" }));
+        var login = await service.Login(new LoginRequest
+        {
+            Email = " ADMIN@EXAMPLE.INVALID ", Password = flow == "admin" ? " new-password " : "new-password"
+        });
+        Assert.NotNull(login);
+        if (flow == "admin")
+            Assert.Null(await service.Login(new LoginRequest { Email = f.User.Auth.Email, Password = "new-password" }));
     }
 
     [Fact]

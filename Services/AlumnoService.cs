@@ -21,9 +21,33 @@ namespace CENS15_V2.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<AlumnoDto>> GetAllAsync(bool includeDeleted = false)
+        public async Task<IEnumerable<AlumnoDto>> GetAllAsync(bool includeDeleted = false, string? search = null, int? cursoId = null, int? anio = null)
         {
-            var alumnos = await QueryAlumno(includeDeleted).AsNoTracking().ToListAsync();
+            var query = QueryAlumno(includeDeleted).AsNoTracking();
+            if (search != null)
+            {
+                search = search.Trim();
+                if (search.Length < 3)
+                {
+                    return Array.Empty<AlumnoDto>();
+                }
+
+                foreach (var term in search.ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Where(a => a.Nombres.ToLower().Contains(term) ||
+                        a.Apellidos.ToLower().Contains(term) ||
+                        (a.NumeroDocumento != null && a.NumeroDocumento.ToLower().Contains(term)));
+                }
+            }
+
+            if (cursoId.HasValue || anio.HasValue)
+            {
+                query = query.Where(a => _context.Inscripciones.Any(i => i.AlumnoId == a.Id
+                    && (!cursoId.HasValue || i.CursoId == cursoId.Value)
+                    && (!anio.HasValue || i.Anio == anio.Value)));
+            }
+
+            var alumnos = await query.ToListAsync();
             return _mapper.Map<IEnumerable<AlumnoDto>>(alumnos);
         }
 
@@ -151,6 +175,71 @@ namespace CENS15_V2.Services
             alumno.FechaEliminacion = null;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<AlumnoPermanentDeletionInfoDto?> GetPermanentDeletionInfoAsync(int id)
+        {
+            if (!await _context.Alumnos.IgnoreQueryFilters().AnyAsync(a => a.Id == id)) return null;
+            var dependencies = new List<AlumnoDeletionDependencyDto>
+            {
+                new() { Entidad = "Calificaciones", Cantidad = await _context.Calificaciones.IgnoreQueryFilters().CountAsync(c => c.CursadaMateria.Inscripcion.AlumnoId == id) },
+                new() { Entidad = "CursadasMaterias", Cantidad = await _context.CursadasMaterias.IgnoreQueryFilters().CountAsync(c => c.Inscripcion.AlumnoId == id) },
+                new() { Entidad = "Inscripciones", Cantidad = await _context.Inscripciones.IgnoreQueryFilters().CountAsync(i => i.AlumnoId == id) },
+                new() { Entidad = "AlumnoDocumentos", Cantidad = await _context.AlumnoDocumentos.IgnoreQueryFilters().CountAsync(d => d.AlumnoId == id) },
+                new() { Entidad = "AlumnoContactos", Cantidad = await _context.AlumnoContactos.IgnoreQueryFilters().CountAsync(c => c.AlumnoId == id) },
+                new() { Entidad = "AlumnoNacimientos", Cantidad = await _context.AlumnoNacimientos.IgnoreQueryFilters().CountAsync(n => n.AlumnoId == id) }
+            };
+            var allowed = dependencies.All(d => d.Cantidad == 0) && PermanentDeletionGuard.HasKnownReferences(_context);
+            return new AlumnoPermanentDeletionInfoDto
+            {
+                AlumnoId = id, PuedeEliminar = allowed, Dependencias = dependencies,
+                OrdenEliminacion = dependencies.Select(d => d.Entidad).Append("Alumnos").ToArray(),
+                Mensaje = allowed
+                    ? "La eliminacion es definitiva e irreversible. No se podra restaurar al alumno."
+                    : "Elimine manualmente las dependencias desde la entidad mas hija hacia el alumno, incluidos documentos, contacto y nacimiento. No se eliminan hijos automaticamente."
+            };
+        }
+
+        public async Task<bool> DeletePermanentlyAsync(int id)
+        {
+            var relational = _context.Database.IsRelational();
+            if (relational && !_context.Database.IsNpgsql()) throw new DeletionConflictException();
+            await using var transaction = relational
+                ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+            try
+            {
+                if (relational)
+                {
+                    // FK inserts take KEY SHARE on this row, incompatible with FOR UPDATE.
+                    var locked = await _context.Alumnos.FromSqlInterpolated($"SELECT * FROM \"Alumnos\" WHERE \"Id\" = {id} FOR UPDATE")
+                        .IgnoreQueryFilters().AsNoTracking().ToListAsync();
+                    if (locked.Count == 0) return false;
+                }
+                var info = await GetPermanentDeletionInfoAsync(id);
+                if (info == null) return false;
+                if (!info.PuedeEliminar) throw new DeletionConflictException();
+                if (relational)
+                {
+                    var deleted = await _context.Alumnos.IgnoreQueryFilters().Where(a => a.Id == id &&
+                        !_context.Inscripciones.IgnoreQueryFilters().Any(i => i.AlumnoId == a.Id) &&
+                        !_context.AlumnoDocumentos.IgnoreQueryFilters().Any(d => d.AlumnoId == a.Id) &&
+                        !_context.AlumnoContactos.IgnoreQueryFilters().Any(c => c.AlumnoId == a.Id) &&
+                        !_context.AlumnoNacimientos.IgnoreQueryFilters().Any(n => n.AlumnoId == a.Id)).ExecuteDeleteAsync();
+                    if (deleted != 1) throw new DeletionConflictException();
+                    await transaction!.CommitAsync();
+                }
+                else
+                {
+                    var alumno = await _context.Alumnos.IgnoreQueryFilters().SingleAsync(a => a.Id == id);
+                    _context.Alumnos.Remove(alumno);
+                    await _context.SaveChangesAsync();
+                }
+                return true;
+            }
+            catch (Exception ex) when (PermanentDeletionGuard.IsConflict(ex))
+            {
+                throw new DeletionConflictException();
+            }
         }
 
         private IQueryable<Alumno> QueryAlumno(bool includeDeleted = false)

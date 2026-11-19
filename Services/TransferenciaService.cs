@@ -89,7 +89,8 @@ public sealed class TransferenciaService(AppDbContext db, SessionEpoch? sessionE
         await using var tx = db.Database.IsRelational()
             ? await db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct) : null;
         var s = await CargarAsync(ct, EsSeguridad(seccion));
-        if (actorId.HasValue && !await db.Users.AnyAsync(u => u.Id == actorId.Value && u.Status && u.Role.Name == "Admin", ct))
+        if (actorId.HasValue && !await db.Users.AnyAsync(u => u.Id == actorId.Value && u.Status
+            && (u.Role.Name.Trim().ToUpper() == "ADMIN" || u.Role.Name.Trim().ToUpper() == "SUPERADMIN"), ct))
             throw new UnauthorizedAccessException("El usuario actual ya no es un administrador activo en el destino.");
         var materias = seccion is "materias" or "horarios" ? s.Materias : [];
         var cursos = seccion == "cursos" ? s.Cursos : s.Cursos.Where(c => materias.Any(m => m.CursoId == c.Id)).ToList();
@@ -181,7 +182,7 @@ public sealed class TransferenciaService(AppDbContext db, SessionEpoch? sessionE
                     LOCK TABLE "Anexos", "Orientaciones", "Cursos", "Docentes", "Materias",
                     "MateriaDocentes", "HorariosAnexo", "HorariosMateria", "Alumnos",
                     "AlumnoContactos", "AlumnoNacimientos", "AlumnoDocumentos", "Inscripciones",
-                    "CursadasMaterias", "Calificaciones" IN SHARE ROW EXCLUSIVE MODE
+                    "CursadasMaterias", "Calificaciones", "Preceptores" IN SHARE ROW EXCLUSIVE MODE
                     """, ct);
                 if (EsSeguridad(paquete.Seccion))
                     await db.Database.ExecuteSqlRawAsync("""
@@ -193,7 +194,8 @@ public sealed class TransferenciaService(AppDbContext db, SessionEpoch? sessionE
             if (actorId.HasValue)
             {
                 var actor = await db.Users.Include(u => u.Role).SingleOrDefaultAsync(u => u.Id == actorId.Value, ct);
-                if (actor == null || !actor.Status || actor.Role.Name != "Admin")
+                if (actor == null || !actor.Status || !(actor.Role.Name.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                    || actor.Role.Name.Trim().Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)))
                     report.Errores.Add("El usuario actual ya no es un administrador activo en el destino.");
             }
             report.Huella = CalcularHuella(paquete, modo);
@@ -560,6 +562,9 @@ public sealed class TransferenciaService(AppDbContext db, SessionEpoch? sessionE
             var exists = usuarios.TryGetValue(key, out var entity);
             Exigir(!exists || entity!.Id != actorId || (item.Activo && entity.RoleId == role.Id),
                 "El usuario actual no puede darse de baja ni cambiar su propio rol.");
+            Exigir(!exists || PreceptorService.IsPreceptorRole(role.Name)
+                || !db.Preceptores.Any(p => p.UserId == entity!.Id),
+                "No se puede cambiar el rol de un usuario vinculado a un preceptor. Desvinculalo primero.");
             if (!exists)
             {
                 entity = new User { Id = Guid.NewGuid(), Role = role, RoleId = role.Id };
@@ -880,6 +885,7 @@ public sealed class TransferenciaService(AppDbContext db, SessionEpoch? sessionE
             await db.Set<RoleResponsibility>().IgnoreQueryFilters().LoadAsync(ct);
             await db.Set<RolePermission>().IgnoreQueryFilters().LoadAsync(ct);
             s.Usuarios = await db.Users.IgnoreQueryFilters().ToListAsync(ct);
+            await db.Preceptores.LoadAsync(ct);
             await db.Auths.IgnoreQueryFilters().LoadAsync(ct);
         }
         return s;

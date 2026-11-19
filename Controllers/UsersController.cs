@@ -44,8 +44,12 @@ namespace CENS15_V2.Controllers
         [Authorize(Policy = ResponsibilityPolicies.UsuariosEditar)]
         public async Task<IActionResult> Put(Guid id, UpdateUserRequest request)
         {
-            var ok = await _service.UpdateAsync(id, request);
-            return ok ? NoContent() : NotFound();
+            try
+            {
+                var ok = await _service.UpdateAsync(id, request);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
         }
 
         [HttpPatch("{id}/status")]

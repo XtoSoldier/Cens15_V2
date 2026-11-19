@@ -75,14 +75,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnAuthenticationFailed = ctx =>
             {
-                Console.WriteLine("JWT validation failed.");
+                ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("SessionAuthentication")
+                    .LogWarning("JWT rechazado ({FailureType}). TraceId: {TraceId}",
+                        ctx.Exception.GetType().Name, ctx.HttpContext.TraceIdentifier);
                 return Task.CompletedTask;
             },
             OnTokenValidated = async ctx =>
             {
                 var epoch = ctx.HttpContext.RequestServices.GetRequiredService<SessionEpoch>();
                 var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-                if (!await SessionPrincipalValidator.ValidateAsync(ctx.Principal, db, epoch.Current, jwt["Key"]!, ctx.HttpContext.RequestAborted))
+                var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("SessionAuthentication");
+                if (!await SessionPrincipalValidator.ValidateAsync(ctx.Principal, db, epoch.Current, jwt["Key"]!, ctx.HttpContext.RequestAborted,
+                    reason => logger.LogWarning("Sesion rechazada ({Reason}). TraceId: {TraceId}", reason, ctx.HttpContext.TraceIdentifier)))
                     ctx.Fail("Sesion invalidada. Ingrese nuevamente.");
             }
         };
@@ -108,7 +112,7 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? AppDbContextFactory.DefaultConnectionString)
+        ?? throw new InvalidOperationException("Falta ConnectionStrings:DefaultConnection."))
 );
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -128,6 +132,7 @@ builder.Services.AddScoped<IAnexoService, AnexoService>();
 builder.Services.AddScoped<IHorarioAnexoService, HorarioAnexoService>();
 builder.Services.AddScoped<IMateriaService, MateriaService>();
 builder.Services.AddScoped<IDocenteService, DocenteService>();
+builder.Services.AddScoped<IPreceptorService, PreceptorService>();
 builder.Services.AddScoped<IInscripcionService, InscripcionService>();
 builder.Services.AddScoped<ICursadaMateriaService, CursadaMateriaService>();
 builder.Services.AddScoped<ICalificacionService, CalificacionService>();
@@ -141,6 +146,9 @@ builder.Services.AddSingleton<CheckpointPreviews>();
 builder.Services.AddScoped<CheckpointModel>();
 builder.Services.AddScoped<CheckpointRecovery>();
 builder.Services.AddScoped<CheckpointService>();
+builder.Services.AddSingleton<StartupReadiness>();
+builder.Services.AddScoped<IDatabaseSchemaProbe, DatabaseSchemaProbe>();
+builder.Services.AddScoped<DatabaseMaintenance>();
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
 {
     var fallback = options.InvalidModelStateResponseFactory;
@@ -150,14 +158,41 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
             : fallback(context);
 });
 
-var app = builder.Build();
+await using var app = builder.Build();
 
-// Recovery precedes migrations, seeding, static-file providers and all request handling.
-using (var recoveryScope = app.Services.CreateScope())
+// Maintenance is a console-only operation, never enabled by settings or HTTP requests.
+if (args.Any(arg => arg.Equals("--maintenance", StringComparison.OrdinalIgnoreCase)
+    || arg.StartsWith("--maintenance=", StringComparison.OrdinalIgnoreCase)))
 {
-    await recoveryScope.ServiceProvider.GetRequiredService<CheckpointRecovery>().InitializeAsync();
+    var operation = builder.Configuration["maintenance"];
+    var database = builder.Configuration["confirm-database"];
+    if (operation is not ("migrate" or "seed") || string.IsNullOrWhiteSpace(database))
+    {
+        Console.Error.WriteLine("Uso: --maintenance migrate|seed --confirm-database NOMBRE_BD. La API debe estar detenida.");
+        Environment.ExitCode = 2;
+        return;
+    }
+    await using var scope = app.Services.CreateAsyncScope();
+    try
+    {
+        await scope.ServiceProvider.GetRequiredService<DatabaseMaintenance>().RunAsync(operation, database);
+        Console.WriteLine("Mantenimiento completado. Inicie la API sin --maintenance.");
+    }
+    catch (Exception ex)
+    {
+        app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseMaintenance")
+            .LogError("Mantenimiento rechazado o fallido: {ExceptionType}. Verifique configuracion, permisos y recuperacion pendiente.", ex.GetType().Name);
+        Console.Error.WriteLine("No se completo el mantenimiento. No se iniciara el servidor HTTP.");
+        Environment.ExitCode = 1;
+    }
+    return;
 }
-app.UseMiddleware<CheckpointGateMiddleware>();
+
+await ApplicationStartup.InitializeAsync(app.Services, builder.Configuration, app.Logger, app.Lifetime.ApplicationStopping);
+
+// Diagnostics remain independent of database, checkpoint gate and JWT handlers.
+app.UseCors("AllowAll");
+app.UseMiddleware<StartupReadinessMiddleware>();
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
@@ -165,6 +200,7 @@ app.UseMiddleware<CheckpointGateMiddleware>();
     app.UseSwagger();
     app.UseSwaggerUI();
 //}
+app.UseMiddleware<CheckpointGateMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -174,71 +210,16 @@ if (!app.Environment.IsDevelopment())
 var uploadsRoot = Path.Combine(
     app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"),
     "uploads");
-Directory.CreateDirectory(uploadsRoot);
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseStaticFiles(new StaticFileOptions
+if (Directory.Exists(uploadsRoot)) app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsRoot),
     RequestPath = "/uploads"
 });
 
-app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
-
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var hasher = scope.ServiceProvider.GetRequiredService<PasswordHasher>();
-
-    await db.Database.MigrateAsync();
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"CursadasMaterias\" ADD COLUMN IF NOT EXISTS \"MateriaNombre\" text NOT NULL DEFAULT '';");
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Calificaciones\" ADD COLUMN IF NOT EXISTS \"MateriaNombre\" text NOT NULL DEFAULT '';");
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Inscripciones\" ADD COLUMN IF NOT EXISTS \"CursoNombre\" text NOT NULL DEFAULT '';");
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Inscripciones\" ADD COLUMN IF NOT EXISTS \"Division\" text NOT NULL DEFAULT '';");
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Auths\" ADD COLUMN IF NOT EXISTS \"MustChangePassword\" boolean NOT NULL DEFAULT false;");
-    await db.Database.ExecuteSqlRawAsync("ALTER TABLE \"Auths\" ADD COLUMN IF NOT EXISTS \"InitialAccessSentAt\" timestamp with time zone NULL;");
-    await db.Database.ExecuteSqlRawAsync(@"
-        CREATE TABLE IF NOT EXISTS ""LoginActivities"" (
-            ""Id"" integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-            ""CreatedAt"" timestamp with time zone NOT NULL,
-            ""Email"" text NOT NULL,
-            ""UserId"" uuid NULL,
-            ""Success"" boolean NOT NULL,
-            ""Reason"" text NULL,
-            ""Platform"" text NULL,
-            ""DeviceInfo"" text NULL,
-            ""AppVersion"" text NULL,
-            ""IpAddress"" text NULL,
-            CONSTRAINT ""FK_LoginActivities_Users_UserId"" FOREIGN KEY (""UserId"") REFERENCES ""Users"" (""Id"") ON DELETE SET NULL
-        );
-    ");
-    await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LoginActivities_CreatedAt\" ON \"LoginActivities\" (\"CreatedAt\");");
-    await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LoginActivities_Email\" ON \"LoginActivities\" (\"Email\");");
-    await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_LoginActivities_UserId\" ON \"LoginActivities\" (\"UserId\");");
-    await db.Database.ExecuteSqlRawAsync(@"
-        CREATE TABLE IF NOT EXISTS ""PasswordResetCodes"" (
-            ""Id"" integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-            ""AuthId"" uuid NOT NULL,
-            ""CodeHash"" text NOT NULL,
-            ""CreatedAt"" timestamp with time zone NOT NULL,
-            ""ExpiresAt"" timestamp with time zone NOT NULL,
-            ""UsedAt"" timestamp with time zone NULL,
-            ""Attempts"" integer NOT NULL,
-            CONSTRAINT ""FK_PasswordResetCodes_Auths_AuthId"" FOREIGN KEY (""AuthId"") REFERENCES ""Auths"" (""Id"") ON DELETE CASCADE
-        );
-    ");
-    await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_AuthId\" ON \"PasswordResetCodes\" (\"AuthId\");");
-    await db.Database.ExecuteSqlRawAsync("CREATE INDEX IF NOT EXISTS \"IX_PasswordResetCodes_ExpiresAt\" ON \"PasswordResetCodes\" (\"ExpiresAt\");");
-    // A full restore must not silently acquire seeded roles/responsibilities on its next restart.
-    if (!await scope.ServiceProvider.GetRequiredService<CheckpointRecovery>().HasRestoredAsync())
-        await DbSeeder.Seed(db, hasher);
-}
 
 app.MapControllers();
 

@@ -237,15 +237,42 @@ namespace CENS15_V2.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var inscripcion = await _context.Inscripciones.FirstOrDefaultAsync(i => i.Id == id);
-            if (inscripcion == null)
+            var relational = _context.Database.IsRelational();
+            if (relational && !_context.Database.IsNpgsql()) throw new DeletionConflictException();
+            await using var transaction = relational
+                ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+            try
             {
-                return false;
+                if (relational)
+                {
+                    var locked = await _context.Inscripciones.FromSqlInterpolated($"SELECT * FROM \"Inscripciones\" WHERE \"Id\" = {id} FOR UPDATE")
+                        .IgnoreQueryFilters().AsNoTracking().ToListAsync();
+                    if (locked.Count == 0) return false;
+                }
+                if (!await _context.Inscripciones.IgnoreQueryFilters().AnyAsync(i => i.Id == id)) return false;
+                if (!PermanentDeletionGuard.HasKnownReferences(_context) ||
+                    await _context.CursadasMaterias.IgnoreQueryFilters().AnyAsync(c => c.InscripcionId == id) ||
+                    await _context.Calificaciones.IgnoreQueryFilters().AnyAsync(c => c.CursadaMateria.InscripcionId == id))
+                    throw new DeletionConflictException();
+                if (relational)
+                {
+                    var deleted = await _context.Inscripciones.IgnoreQueryFilters().Where(i => i.Id == id &&
+                        !_context.CursadasMaterias.IgnoreQueryFilters().Any(c => c.InscripcionId == i.Id)).ExecuteDeleteAsync();
+                    if (deleted != 1) throw new DeletionConflictException();
+                    await transaction!.CommitAsync();
+                }
+                else
+                {
+                    var inscripcion = await _context.Inscripciones.IgnoreQueryFilters().SingleAsync(i => i.Id == id);
+                    _context.Inscripciones.Remove(inscripcion);
+                    await _context.SaveChangesAsync();
+                }
+                return true;
             }
-
-            _context.Inscripciones.Remove(inscripcion);
-            await _context.SaveChangesAsync();
-            return true;
+            catch (Exception ex) when (PermanentDeletionGuard.IsConflict(ex))
+            {
+                throw new DeletionConflictException();
+            }
         }
 
         private async Task RemoveCursadasSinCalificacionesAsync(int inscripcionId)

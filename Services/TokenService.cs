@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 using CENS15_V2.Entities;
@@ -25,7 +26,7 @@ namespace CENS15.V2.Services
             var jwt = _config.GetSection("Jwt");
 
             var expiration = DateTime.UtcNow.AddMinutes(
-                double.Parse(jwt["DurationInMinutes"]));
+                double.Parse(jwt["DurationInMinutes"]!, NumberStyles.Float, CultureInfo.InvariantCulture));
 
             var claims = new List<Claim>
     {

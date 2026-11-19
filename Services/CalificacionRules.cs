@@ -17,6 +17,29 @@ namespace CENS15_V2.Services
             ValidateNota(calificacion.C2Nota1);
             ValidateNota(calificacion.C2Nota2);
             ValidateNota(calificacion.C2Nota3);
+            if (calificacion.Estado == EstadoMateria.AprobadoPorEquivalencia)
+            {
+                if (calificacion.DesdePase)
+                    throw new InvalidOperationException("Aprobado por equivalencia y Desde Pase son incompatibles.");
+                if (string.IsNullOrWhiteSpace(calificacion.DisposicionEquivalencia))
+                    throw new InvalidOperationException("La disposicion es obligatoria para aprobar por equivalencia.");
+                if (calificacion.RecuperacionExcepcional.HasValue &&
+                    calificacion.RecuperacionExcepcional is not (EstadoMateria.RecuperaPrimerCuatrimestre or
+                        EstadoMateria.RecuperaSegundoCuatrimestre or EstadoMateria.RecuperaAmbos))
+                    throw new InvalidOperationException("La recuperacion excepcional debe indicar Primero, Segundo o Ambos.");
+
+                // Validate but retain raw quarters/exams, including historical numeric values.
+                Normalize(calificacion.C1Promedio, calificacion.C1Condicion);
+                Normalize(calificacion.C2Promedio, calificacion.C2Condicion);
+                Normalize(calificacion.RecuperacionDiciembre, calificacion.DiciembreCondicion);
+                Normalize(calificacion.RecuperacionMarzo, calificacion.MarzoCondicion);
+                calificacion.DisposicionEquivalencia = calificacion.DisposicionEquivalencia.Trim();
+                calificacion.PromedioAnual = null;
+                calificacion.CalificacionFinal = null;
+                return;
+            }
+
+            calificacion.DisposicionEquivalencia = null;
             calificacion.C1Promedio = Normalize(calificacion.C1Promedio, calificacion.C1Condicion);
             calificacion.C2Promedio = Normalize(calificacion.C2Promedio, calificacion.C2Condicion);
             calificacion.RecuperacionDiciembre = Normalize(calificacion.RecuperacionDiciembre, calificacion.DiciembreCondicion);

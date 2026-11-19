@@ -16,7 +16,7 @@ public static class ImportCli
 
     public static async Task<int> Main(string[] args)
     {
-        try { return await Run(args); }
+        try { return args.FirstOrDefault() == "--enroll" ? await CourseEnrollmentCli.Run(args[1..]) : await Run(args); }
         catch (Exception ex)
         {
             // Provider, parser and filesystem exception messages may contain credentials or source PII.

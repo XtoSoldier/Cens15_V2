@@ -5,6 +5,24 @@ namespace CENS15_V2.Security
     public static class ResponsibilityPolicies
     {
         public const string ClaimType = "responsibility";
+        public const string AdminAccess = "Administracion.Acceso";
+
+        public static bool HasRole(ClaimsPrincipal user, string role) => user.Identities
+            .Where(i => i.IsAuthenticated)
+            .Any(i => i.FindAll(i.RoleClaimType).Any(c =>
+                string.Equals(c.Value.Trim(), role, StringComparison.OrdinalIgnoreCase)));
+
+        public static bool IsSuperAdmin(ClaimsPrincipal user) => HasRole(user, "SuperAdmin");
+        public static bool IsPreceptor(ClaimsPrincipal user) => !IsSuperAdmin(user) && HasRole(user, "Preceptor");
+        public static bool IsDocente(ClaimsPrincipal user) => !IsSuperAdmin(user) && !IsPreceptor(user) && HasRole(user, "Docente");
+
+        public static bool TryGetUserId(ClaimsPrincipal user, out Guid userId)
+        {
+            userId = Guid.Empty;
+            return user.Identity?.IsAuthenticated == true
+                && Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier) ?? user.FindFirstValue("sub"), out userId)
+                && userId != Guid.Empty;
+        }
 
         public const string Usuarios = "Usuarios";
         public const string Roles = "Roles";
@@ -16,6 +34,7 @@ namespace CENS15_V2.Security
         public const string CursadasMaterias = "Cursadas Materias";
         public const string Calificaciones = "Calificaciones";
         public const string Docentes = "Docentes";
+        public const string Preceptores = "Preceptores";
         public const string Materias = "Materias";
         public const string Cursos = "Cursos";
         public const string Anexos = "Anexos";
@@ -70,6 +89,10 @@ namespace CENS15_V2.Security
         public const string DocentesCrear = "Docentes.Crear";
         public const string DocentesEditar = "Docentes.Editar";
         public const string DocentesEliminar = "Docentes.Eliminar";
+        public const string PreceptoresConsultar = "Preceptores.Consultar";
+        public const string PreceptoresCrear = "Preceptores.Crear";
+        public const string PreceptoresEditar = "Preceptores.Editar";
+        public const string PreceptoresEliminar = "Preceptores.Eliminar";
 
         public const string MateriasConsultar = "Materias.Consultar";
         public const string MateriasCrear = "Materias.Crear";
@@ -110,6 +133,7 @@ namespace CENS15_V2.Security
             CursadasMaterias,
             Calificaciones,
             Docentes,
+            Preceptores,
             Materias,
             Cursos,
             Anexos,
@@ -158,6 +182,10 @@ namespace CENS15_V2.Security
             [DocentesCrear] = Docentes,
             [DocentesEditar] = Docentes,
             [DocentesEliminar] = Docentes,
+            [PreceptoresConsultar] = Preceptores,
+            [PreceptoresCrear] = Preceptores,
+            [PreceptoresEditar] = Preceptores,
+            [PreceptoresEliminar] = Preceptores,
             [MateriasConsultar] = Materias,
             [MateriasCrear] = Materias,
             [MateriasEditar] = Materias,
@@ -181,10 +209,23 @@ namespace CENS15_V2.Security
             [ActividadLoginConsultar] = ActividadLogin
         };
 
-        public static readonly string[] All = Modules.Concat(GranularToModule.Keys).ToArray();
+        public static readonly string[] All = Modules.Concat(GranularToModule.Keys).Append(AdminAccess).ToArray();
 
         public static bool HasResponsibility(ClaimsPrincipal user, string responsibility)
         {
+            if (!TryGetUserId(user, out _)) return false;
+            if (IsSuperAdmin(user)) return true;
+            if (responsibility == AdminAccess)
+                return !IsPreceptor(user) && HasRole(user, "Admin");
+            if (IsPreceptor(user))
+            {
+                // Do not let broad legacy grants enable writes or reassignment of academic resources.
+                return responsibility is AlumnosConsultar or InscripcionesConsultar or CursosConsultar or MateriasConsultar
+                    or CursadasMateriasConsultar or AlumnoDocumentosConsultar or TiposDocumentoAlumnoConsultar
+                    or CalificacionesConsultar or CertificadosConsultar;
+            }
+            if (IsDocente(user) && responsibility is CalificacionesConsultar or CalificacionesCrear or CalificacionesEditar)
+                return true;
             if (user.HasClaim(ClaimType, responsibility))
             {
                 return true;

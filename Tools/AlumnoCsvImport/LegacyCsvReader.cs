@@ -21,6 +21,7 @@ public sealed class CsvResult
     public List<ImportRow> Rows { get; } = [];
     public List<RowError> ValidationErrors { get; } = [];
     public List<DuplicateRows> Duplicates { get; } = [];
+    public List<long> BirthDateBlankedRows { get; } = [];
     public Dictionary<string, int> FieldBlankCounts { get; } = new();
 }
 
@@ -51,7 +52,7 @@ public static class LegacyCsvReader
         return culture.TextInfo.ToTitleCase(value.Trim().ToLower(culture));
     }
 
-    public static CsvResult Read(byte[] bytes)
+    public static CsvResult Read(byte[] bytes, Action<long, string[]>? inspectFields = null)
     {
         var result = new CsvResult { Sha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant() };
         var headers = Header.Split(',');
@@ -91,6 +92,7 @@ public static class LegacyCsvReader
                     result.ValidationErrors.Add(new(row, "record", "column_count"));
                     continue;
                 }
+                inspectFields?.Invoke(row, fields);
                 string Get(string key)
                 {
                     var value = fields[Array.IndexOf(headers, key)].Trim();

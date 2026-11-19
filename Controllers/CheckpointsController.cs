@@ -1,5 +1,6 @@
 using CENS15_V2.Models;
 using CENS15_V2.Services;
+using CENS15_V2.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -8,7 +9,7 @@ namespace CENS15_V2.Controllers;
 
 [ApiController]
 [Route("api/checkpoints")]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = ResponsibilityPolicies.AdminAccess)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [CheckpointErrors]
 public sealed class CheckpointsController(CheckpointService checkpoints) : ControllerBase
@@ -20,9 +21,10 @@ public sealed class CheckpointsController(CheckpointService checkpoints) : Contr
     public async Task<IActionResult> Create([FromBody] CheckpointCreate request, CancellationToken ct) => Ok(await checkpoints.CreateAsync(request, User, ct));
 
     [HttpPost("importar")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(CheckpointStorage.MaximumBytes + 16384)]
     [RequestFormLimits(MultipartBodyLengthLimit = CheckpointStorage.MaximumBytes, ValueLengthLimit = 2048)]
-    public async Task<IActionResult> Import([FromForm] IFormFile archivo, [FromForm] string clave, CancellationToken ct)
+    public async Task<IActionResult> Import(IFormFile archivo, [FromForm] string clave, CancellationToken ct)
     {
         if (archivo is null || archivo.Length < 52 || archivo.Length > CheckpointStorage.MaximumBytes ||
             !Path.GetExtension(archivo.FileName).Equals(".censbackup", StringComparison.OrdinalIgnoreCase))

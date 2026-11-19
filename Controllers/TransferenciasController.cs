@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Security.Claims;
 using CENS15_V2.Models.DTOs.Transferencias;
 using CENS15_V2.Services;
+using CENS15_V2.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,7 +10,7 @@ namespace CENS15_V2.Controllers;
 
 [ApiController]
 [Route("api/transferencias")]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = ResponsibilityPolicies.AdminAccess)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [RequestSizeLimit(TransferenciaService.MaxBytes)]
 public sealed class TransferenciasController(TransferenciaService service) : ControllerBase

@@ -12,15 +12,40 @@ namespace CENS15_V2.Data
 
         public static async Task Seed(AppDbContext context, PasswordHasher hasher)
         {
+            await SeedCatalogsAsync(context);
+
+            var adminExists = await context.Auths.AnyAsync(a => a.Email == SeedAdminEmail);
+            if (!adminExists)
+            {
+                var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
+                var user = new User
+                {
+                    Id = Guid.NewGuid(), FirstName = "Super", LastName = "Admin",
+                    Image = "default.png", RoleId = adminRole.Id, Status = true
+                };
+                var auth = new Auth
+                {
+                    Id = user.Id, Email = SeedAdminEmail,
+                    PasswordHash = hasher.Hash("Admin123*"), User = user
+                };
+                context.AddRange(user, auth);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public static async Task SeedCatalogsAsync(AppDbContext context)
+        {
             var rolesToCreate = new[]
              {
                 "Admin",
-                "User"
+                "User",
+                "Preceptor"
             };
 
             foreach (var roleName in rolesToCreate)
             {
-                if (!await context.Roles.AnyAsync(r => r.Name == roleName))
+                if (!await context.Roles.AnyAsync(r => roleName == "Preceptor"
+                    ? r.Name.Trim().ToLower() == "preceptor" : r.Name == roleName))
                 {
                     context.Roles.Add(new Role
                     {
@@ -52,34 +77,6 @@ namespace CENS15_V2.Data
             }
 
             await context.SaveChangesAsync();
-
-            var adminExists = await context.Auths.AnyAsync(a => a.Email == SeedAdminEmail);
-            if (!adminExists)
-            {
-                var adminRole = await context.Roles.FirstAsync(r => r.Name == "Admin");
-
-                var user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Super",
-                    LastName = "Admin",
-                    Image = "default.png",
-                    RoleId = adminRole.Id,
-                    Status = true
-                };
-
-                var auth = new Auth
-                {
-                    Id = user.Id,
-                    Email = SeedAdminEmail,
-                    PasswordHash = hasher.Hash("Admin123*"),
-                    User = user
-                };
-
-                context.AddRange(user, auth);
-                await context.SaveChangesAsync();
-            }
-
         }
 
         public static async Task SeedDemoData(AppDbContext context, PasswordHasher hasher)

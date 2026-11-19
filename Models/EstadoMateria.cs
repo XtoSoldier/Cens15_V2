@@ -6,6 +6,7 @@ namespace CENS15_V2.Models
         Aprobado = 1,
         RecuperaPrimerCuatrimestre = 2,
         RecuperaSegundoCuatrimestre = 3,
-        RecuperaAmbos = 4
+        RecuperaAmbos = 4,
+        AprobadoPorEquivalencia = 5
     }
 }

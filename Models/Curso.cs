@@ -8,6 +8,8 @@ namespace CENS15_V2.Models
         public int OrientacionId { get; set; }
         public int AnexoId { get; set; }
         public bool Semipresencial { get; set; }
+        public int? PreceptorId { get; set; }
+        public Preceptor? Preceptor { get; set; }
 
         public Orientacion Orientacion { get; set; } = null!;
         public Anexo Anexo { get; set; } = null!;

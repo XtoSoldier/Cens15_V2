@@ -13,12 +13,13 @@ public sealed class CheckpointRecovery(AppDbContext db, CheckpointStorage storag
     public string Stage(Guid operation) => Path.Combine(storage.Root, operation.ToString("D") + ".new");
     private string Old(Guid operation) => Path.Combine(storage.Root, operation.ToString("D") + ".old");
 
-    public async Task InitializeAsync(CancellationToken ct = default)
+    public async Task InitializeAsync(CancellationToken ct = default, bool prepareDatabase = false)
     {
         gate.Healthy = false;
         if (db.Database.ProviderName != "Npgsql.EntityFrameworkCore.PostgreSQL")
             throw new InvalidOperationException("La recuperacion de checkpoints requiere PostgreSQL.");
-        await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS public.\"__CensCheckpointCommits\" (\"Id\" uuid PRIMARY KEY)", ct);
+        if (prepareDatabase)
+            await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS public.\"__CensCheckpointCommits\" (\"Id\" uuid PRIMARY KEY)", ct);
         await RecoverAsync(ct);
         gate.Healthy = true;
     }

@@ -9,6 +9,7 @@ namespace CENS15_V2.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [TypeFilter(typeof(AcademicAccessFilter))]
     public class DocentesController : ControllerBase
     {
         private readonly IDocenteService _service;
@@ -79,6 +80,20 @@ namespace CENS15_V2.Controllers
             return item == null ? NotFound() : Ok(item);
         }
 
+        [HttpGet("mi-perfil")]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesConsultar)]
+        public async Task<IActionResult> GetMiPerfil()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+            if (!Guid.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+            var item = await _service.GetByUserIdAsync(userId);
+            return item == null
+                ? NotFound(new { message = "El usuario no est\u00e1 vinculado a ning\u00fan docente" })
+                : Ok(item);
+        }
+
         [HttpGet("{id:int}/alumnos-para-calificar")]
         [Authorize(Policy = ResponsibilityPolicies.DocentesConsultar)]
         public async Task<IActionResult> GetAlumnosParaCalificar(int id)
@@ -99,6 +114,15 @@ namespace CENS15_V2.Controllers
             }
 
             return Ok(await _service.GetMateriasActivasConAlumnosByUserIdAsync(userId));
+        }
+
+        [HttpGet("materias-para-calificar")]
+        [Authorize(Policy = ResponsibilityPolicies.CalificacionesConsultar)]
+        public async Task<IActionResult> GetMateriasParaCalificar()
+        {
+            if (!ResponsibilityPolicies.TryGetUserId(User, out _) || !ResponsibilityPolicies.IsSuperAdmin(User))
+                return Forbid();
+            return Ok(await _service.GetMateriasParaCalificarAsync());
         }
     }
 }

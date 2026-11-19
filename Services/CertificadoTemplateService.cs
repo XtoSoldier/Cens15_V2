@@ -269,7 +269,13 @@ namespace CENS15_V2.Services
                     {
                         var calificacion = cursada.Calificacion;
                         sb.Append("<tr>");
-                        sb.Append(BuildTd(Encode(GetMateriaNombre(cursada)), "left", "asignatura"));
+                        var asignatura = Encode(GetMateriaNombre(cursada));
+                        if (calificacion?.Estado == EstadoMateria.AprobadoPorEquivalencia)
+                            asignatura += "<div style=\"font-size:9px;overflow-wrap:anywhere;\">Disposici\u00f3n: " +
+                                Encode(calificacion.DisposicionEquivalencia ?? string.Empty) + "</div>";
+                        if (calificacion?.DesdePase == true)
+                            asignatura += "<div style=\"font-size:9px;\">Viene de Pase</div>";
+                        sb.Append(BuildTd(asignatura, "left", "asignatura"));
                         sb.Append(BuildTd(FormatNota(calificacion?.C1Promedio, calificacion?.C1Condicion ?? CondicionNota.Numerica)));
                         sb.Append(BuildTd(FormatNota(calificacion?.C2Promedio, calificacion?.C2Condicion ?? CondicionNota.Numerica)));
                         sb.Append(BuildTd(FormatNota(calificacion?.PromedioAnual)));
@@ -360,6 +366,7 @@ namespace CENS15_V2.Services
             {
                 EstadoMateria.EnCurso => "En curso",
                 EstadoMateria.Aprobado => "Aprobado",
+                EstadoMateria.AprobadoPorEquivalencia => "A/E",
                 EstadoMateria.RecuperaPrimerCuatrimestre => "Recupera 1er cuatrimestre",
                 EstadoMateria.RecuperaSegundoCuatrimestre => "Recupera 2do cuatrimestre",
                 EstadoMateria.RecuperaAmbos => "Recupera ambos",

@@ -29,6 +29,7 @@ namespace CENS15_V2.Data
         public DbSet<HorarioMateria> HorariosMateria { get; set; }
         public DbSet<Materia> Materias { get; set; }
         public DbSet<Docente> Docentes { get; set; }
+        public DbSet<Preceptor> Preceptores { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
         public DbSet<MateriaDocente> MateriaDocentes { get; set; }
         public DbSet<CursadaMateria> CursadasMaterias { get; set; }
@@ -47,6 +48,16 @@ namespace CENS15_V2.Data
             ConfigurePasswordResetCode(modelBuilder);
             ConfigureHorarioAnexo(modelBuilder);
             ConfigureHorarioMateria(modelBuilder);
+            modelBuilder.Entity<Preceptor>()
+                .HasOne(p => p.User).WithOne(u => u.Preceptor)
+                .HasForeignKey<Preceptor>(p => p.UserId).OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<Preceptor>().HasIndex(p => p.UserId).IsUnique();
+            modelBuilder.Entity<Preceptor>().Property(p => p.Version).IsConcurrencyToken();
+            modelBuilder.Entity<Curso>()
+                .HasOne(c => c.Preceptor).WithMany(p => p.Cursos)
+                .HasForeignKey(c => c.PreceptorId).OnDelete(DeleteBehavior.SetNull);
+            // Compare the original occupancy, including NULL, before assigning or freeing a course.
+            modelBuilder.Entity<Curso>().Property(c => c.PreceptorId).IsConcurrencyToken();
         }
 
         private static void ConfigurePasswordResetCode(ModelBuilder modelBuilder)
@@ -309,6 +320,11 @@ namespace CENS15_V2.Data
             modelBuilder.Entity<Calificacion>()
                 .Property(c => c.Estado)
                 .HasConversion<string>();
+
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.DisposicionEquivalencia).HasColumnType("text");
+            modelBuilder.Entity<Calificacion>()
+                .Property(c => c.DesdePase).HasDefaultValue(false);
 
             modelBuilder.Entity<Calificacion>()
                 .Property(c => c.C1Condicion).HasDefaultValue(CondicionNota.Numerica);

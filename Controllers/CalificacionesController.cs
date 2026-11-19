@@ -9,6 +9,7 @@ namespace CENS15_V2.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [TypeFilter(typeof(AcademicAccessFilter))]
     public class CalificacionesController : ControllerBase
     {
         private readonly ICalificacionService _service;
@@ -44,6 +45,13 @@ namespace CENS15_V2.Controllers
         {
             try
             {
+                var existing = await _service.GetByIdAsync(id);
+                if (existing == null)
+                    return NotFound();
+
+                if (!await CanCalificarAsync(existing.CursadaMateriaId))
+                    return StatusCode(403, "El docente no esta activo para calificar esta materia.");
+
                 if (!await CanCalificarAsync(request.CursadaMateriaId))
                 {
                     return StatusCode(403, "El docente no está activo para calificar esta materia.");
@@ -76,14 +84,9 @@ namespace CENS15_V2.Controllers
 
         private async Task<bool> CanCalificarAsync(int cursadaMateriaId)
         {
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? User.FindFirstValue("sub");
-
-            if (!Guid.TryParse(userIdValue, out var userId))
-            {
-                return true;
-            }
-
+            if (!ResponsibilityPolicies.TryGetUserId(User, out var userId)) return false;
+            if (ResponsibilityPolicies.IsSuperAdmin(User)) return true;
+            if (ResponsibilityPolicies.IsPreceptor(User)) return false;
             return await _service.CanUserCalificarCursadaAsync(userId, cursadaMateriaId);
         }
     }

@@ -1,5 +1,6 @@
 ﻿using CENS15_V2.Data;
 using CENS15_V2.Entities;
+using CENS15_V2.Helper;
 using CENS15_V2.Models.DTOs.UsersDTOs;
 using CENS15_V2.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace CENS15_V2.Services
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
+        private readonly PasswordHasher _hasher;
 
-        public UserService(AppDbContext context)
+        public UserService(AppDbContext context, PasswordHasher hasher)
         {
             _context = context;
+            _hasher = hasher;
         }
 
         public async Task<IEnumerable<UserDTO>> GetAllAsync()
@@ -49,19 +52,42 @@ namespace CENS15_V2.Services
                 .FirstAsync(u => u.Id == user.Id);
         }
 
-        public async Task<bool> UpdateAsync(Guid id, UpdateUserRequest request)
+        public Task<bool> UpdateAsync(Guid id, UpdateUserRequest request) => PreceptorWriteGuard.ExecuteAsync(_context, async () =>
         {
             var existing = await _context.Users.FindAsync(id);
             if (existing == null) return false;
+
+            CENS15_V2.Models.Auth? auth = null;
+            string? passwordHash = null;
+            if (!string.IsNullOrEmpty(request.Password))
+            {
+                PasswordHasher.ValidatePassword(request.Password);
+                auth = await _context.Auths.FindAsync(id);
+                if (auth == null)
+                    throw new InvalidOperationException("El usuario no tiene credenciales de acceso. No se cambio la contrasena.");
+                passwordHash = _hasher.Hash(request.Password);
+            }
+
+            if (await _context.Preceptores.AnyAsync(p => p.UserId == id))
+            {
+                var roleName = await _context.Roles.Where(r => r.Id == request.RoleId).Select(r => r.Name).FirstOrDefaultAsync();
+                if (!PreceptorService.IsPreceptorRole(roleName))
+                    throw new InvalidOperationException("No se puede cambiar el rol de un usuario vinculado a un preceptor. Desvinculalo primero.");
+            }
 
             existing.FirstName = request.FirstName;
             existing.LastName = request.LastName;
             existing.Image = request.Image;
             existing.RoleId = request.RoleId;
+            if (auth != null)
+            {
+                auth.PasswordHash = passwordHash!;
+                auth.MustChangePassword = false;
+            }
 
             await _context.SaveChangesAsync();
             return true;
-        }
+        });
 
         public async Task<bool> UpdateStatusAsync(Guid id, UpdateUserStatusRequest request)
         {
@@ -99,6 +125,7 @@ namespace CENS15_V2.Services
                 .Include(u => u.Auth)
                     .ThenInclude(a => a.Token)
                 .Include(u => u.Docente)
+                .Include(u => u.Preceptor)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null) return false;
@@ -106,6 +133,10 @@ namespace CENS15_V2.Services
             if (user.Docente != null)
             {
                 user.Docente.UserId = null;
+            }
+            if (user.Preceptor != null)
+            {
+                user.Preceptor.UserId = null;
             }
 
             if (user.Auth?.Token != null)

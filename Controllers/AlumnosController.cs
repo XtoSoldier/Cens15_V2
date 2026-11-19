@@ -20,14 +20,21 @@ namespace CENS15_V2.Controllers
 
         [HttpGet]
         [Authorize(Policy = ResponsibilityPolicies.AlumnosConsultar)]
-        public async Task<IActionResult> Get([FromQuery] bool includeDeleted = false)
+        public async Task<IActionResult> Get([FromQuery] bool includeDeleted = false, [FromQuery] string? search = null,
+            [FromQuery] int? cursoId = null, [FromQuery] int? anio = null)
         {
             if (includeDeleted && !IsAdministrator())
             {
                 return Forbid();
             }
 
-            return Ok(await _service.GetAllAsync(includeDeleted));
+            // Model binding converts empty query values to null; only an omitted search means all.
+            if (search == null && HttpContext?.Request.Query.ContainsKey("search") == true)
+            {
+                search = string.Empty;
+            }
+
+            return Ok(await _service.GetAllAsync(includeDeleted, search, cursoId, anio));
         }
 
         [HttpGet("{id:int}")]
@@ -96,6 +103,30 @@ namespace CENS15_V2.Controllers
 
             var ok = await _service.RestoreAsync(id);
             return ok ? NoContent() : NotFound();
+        }
+
+        [HttpGet("{id:int}/permanent-deletion-info")]
+        [Authorize]
+        public async Task<IActionResult> GetPermanentDeletionInfo(int id)
+        {
+            if (!IsAdministrator()) return Forbid();
+            var info = await _service.GetPermanentDeletionInfoAsync(id);
+            return info == null ? NotFound() : Ok(info);
+        }
+
+        [HttpDelete("{id:int}/permanent")]
+        [Authorize]
+        public async Task<IActionResult> DeletePermanently(int id)
+        {
+            if (!IsAdministrator()) return Forbid();
+            try
+            {
+                return await _service.DeletePermanentlyAsync(id) ? NoContent() : NotFound();
+            }
+            catch (CENS15_V2.Services.DeletionConflictException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         private bool IsAdministrator()

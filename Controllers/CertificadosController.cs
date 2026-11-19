@@ -8,6 +8,7 @@ namespace CENS15_V2.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [TypeFilter(typeof(AcademicAccessFilter))]
     public class CertificadosController : ControllerBase
     {
         private readonly ICertificadoTemplateService _service;

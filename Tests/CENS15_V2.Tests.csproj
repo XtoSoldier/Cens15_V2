@@ -15,5 +15,6 @@
     </PackageReference>
     <ProjectReference Include="..\CENS15_V2.csproj" />
     <ProjectReference Include="..\Tools\AlumnoCsvImport\AlumnoCsvImport.csproj" />
+    <ProjectReference Include="..\Tools\DocenteUserCsvImport\DocenteUserCsvImport.csproj" />
   </ItemGroup>
 </Project>

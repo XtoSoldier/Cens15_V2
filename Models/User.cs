@@ -16,5 +16,6 @@ namespace CENS15_V2.Entities
 
         public Auth Auth { get; set; }
         public Docente? Docente { get; set; }
+        public Preceptor? Preceptor { get; set; }
     }
 }

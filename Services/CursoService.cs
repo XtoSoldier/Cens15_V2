@@ -95,7 +95,8 @@ namespace CENS15_V2.Services
         {
             return _context.Cursos
                 .Include(c => c.Orientacion)
-                .Include(c => c.Anexo);
+                .Include(c => c.Anexo)
+                .Include(c => c.Preceptor);
         }
 
         private static (string curso, string division) NormalizeAndValidate(string cursoInput, string divisionInput)

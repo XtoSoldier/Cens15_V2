@@ -82,8 +82,15 @@ namespace CENS15_V2.Controllers
         [Authorize(Policy = ResponsibilityPolicies.InscripcionesEliminar)]
         public async Task<IActionResult> Delete(int id)
         {
-            var ok = await _service.DeleteAsync(id);
-            return ok ? NoContent() : NotFound();
+            try
+            {
+                var ok = await _service.DeleteAsync(id);
+                return ok ? NoContent() : NotFound();
+            }
+            catch (CENS15_V2.Services.DeletionConflictException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id:int}/estado")]

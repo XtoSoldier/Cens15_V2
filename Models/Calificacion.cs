@@ -31,6 +31,8 @@ namespace CENS15_V2.Models
         public decimal? CalificacionFinal { get; set; }
 
         public EstadoMateria Estado { get; set; }
+        public string? DisposicionEquivalencia { get; set; }
+        public bool DesdePase { get; set; }
         public CondicionNota C1Condicion { get; set; } = CondicionNota.Numerica;
         public CondicionNota C2Condicion { get; set; } = CondicionNota.Numerica;
         public CondicionNota DiciembreCondicion { get; set; } = CondicionNota.Numerica;

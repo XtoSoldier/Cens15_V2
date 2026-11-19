@@ -31,3 +31,58 @@ Focused tests:
 ```powershell
 dotnet test Tests/CENS15_V2.Tests.csproj -c Release --filter FullyQualifiedName~AlumnoCsvImportTests
 ```
+
+## Explicit 2026 Enrollment Mode
+
+The default mode above still imports profiles only. The separate `--enroll` mode
+is intentionally limited to courses 1F/1G/2F/3D/3E and year 2026, with source legacy
+course IDs 28 for 1F, 25 for 1G, 32 for 2F, 33 for 3D and 34 for 3E. The 2F request uses
+`alumnos_2H_2026.csv` as its source; the explicit destination takes precedence
+over the filename. It does not enroll those students in 2H.
+The legacy ID is validated but never used as the destination course ID. Exactly
+one existing destination course with the requested year level and division must be resolved.
+No courses, subjects, document types, users or grades are created.
+
+Preview, using an explicit local Development configuration and READ ONLY transaction:
+
+```powershell
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_1F_2026.csv --course 1F --year 2026
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_1G_2026.csv --course 1G --year 2026
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_2H_2026.csv --course 2F --year 2026
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_3D_2026.csv --course 3D --year 2026 --unknown-birth-date 9999-09-09
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_3E_2026.csv --course 3E --year 2026
+```
+
+This mode loads appsettings.json and appsettings.Development.json only, without
+environment overrides or Production configuration. Loopback restrictions remain
+mandatory. Preview binds the source, resolved course, year, subjects, document
+catalog and fingerprints/counts of all public tables into the receipt.
+
+After reviewing and authorizing the exact plan:
+
+```powershell
+dotnet run --project Tools/AlumnoCsvImport -c Release -- --enroll --file ../alumnos_1F_2026.csv --course 1F --year 2026 --apply --expected-sha256 SOURCE_SHA256 --expected-database DATABASE --expected-course-id COURSE_ID --expected-receipt RECEIPT
+```
+
+The single serializable transaction creates missing profiles, active enrollments
+and one CursadaMateria per destination subject. Existing profiles are preserved;
+deleted students, contradictory identities and inactive or incomplete existing
+enrollments block apply. Exact active enrollments with complete subjects are
+skipped. Contact field inversions supported by the source are repaired in memory
+with warnings; suspicious emails are preserved, never guessed or corrected.
+
+Invalid/future birth dates block the batch by default, including the legacy
+sentinel `9999-09-09`. For 3D only, the explicitly approved
+`--unknown-birth-date 9999-09-09` option blanks that exact sentinel in memory.
+The affected physical source rows and option are included in the preview/receipt;
+no other date is changed and the CSV bytes/hash remain intact. The user approved
+this for Caren's row 13. NULL gender stays null and is never inferred from a name.
+
+Before commit, the tool verifies expected count deltas, full unchanged snapshots
+of preexisting rows, every new profile and enrollment, all subject assignments,
+and an idempotent rerun plan. Any mismatch rolls back. The CSV is never written.
+See the `RESULTADO_CARGA_*.md` files in this directory for actual execution results and warnings.
+
+```powershell
+dotnet test Tests/CENS15_V2.Tests.csproj -c Release --filter FullyQualifiedName~AlumnoCourseCsvImportTests
+```

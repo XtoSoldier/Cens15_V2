@@ -6,5 +6,6 @@ namespace CENS15_V2.Models.DTOs.UsersDTOs
         public string LastName { get; set; } = string.Empty;
         public string? Image { get; set; }
         public Guid RoleId { get; set; }
+        public string? Password { get; set; }
     }
 }

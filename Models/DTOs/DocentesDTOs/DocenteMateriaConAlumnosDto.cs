@@ -15,6 +15,7 @@ namespace CENS15_V2.Models.DTOs.DocentesDTOs
     public class AlumnoCalificacionSimpleDto
     {
         public int AlumnoId { get; set; }
+        public int InscripcionId { get; set; }
         public string AlumnoNombre { get; set; } = string.Empty;
         public int CursadaMateriaId { get; set; }
         public int? CalificacionId { get; set; }
@@ -36,5 +37,7 @@ namespace CENS15_V2.Models.DTOs.DocentesDTOs
         public decimal? RecuperacionMarzo { get; set; }
         public decimal? CalificacionFinal { get; set; }
         public int Estado { get; set; }
+        public string? DisposicionEquivalencia { get; set; }
+        public bool DesdePase { get; set; }
     }
 }

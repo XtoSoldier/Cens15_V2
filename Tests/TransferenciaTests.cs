@@ -62,7 +62,7 @@ public sealed class TransferenciaTests
     public void EveryEndpointRequiresAdminAndHasSizeBound()
     {
         var type = typeof(TransferenciasController);
-        Assert.Equal("Admin", type.GetCustomAttribute<AuthorizeAttribute>()!.Roles);
+        Assert.Equal(CENS15_V2.Security.ResponsibilityPolicies.AdminAccess, type.GetCustomAttribute<AuthorizeAttribute>()!.Policy);
         Assert.Equal(TransferenciaService.MaxBytes,
             ((IRequestSizeLimitMetadata)type.GetCustomAttribute<RequestSizeLimitAttribute>()!).MaxRequestBodySize);
         Assert.DoesNotContain(type.GetMethods(), m => m.GetCustomAttribute<AllowAnonymousAttribute>() != null);

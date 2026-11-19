@@ -26,12 +26,13 @@ namespace CENS15_V2.Services
 
         public async Task<AuthResponse?> Login(LoginRequest request)
         {
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
             var auth = await _context.Auths
                 .Include(a => a.User)
                 .ThenInclude(u => u.Role)
                 .ThenInclude(r => r.Responsibilities)
                 .ThenInclude(rr => rr.Responsibility)
-                .FirstOrDefaultAsync(x => x.Email == request.Email);
+                .FirstOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail);
 
             if (auth == null || auth.User == null || !auth.User.Status)
                 return null;
@@ -44,7 +45,10 @@ namespace CENS15_V2.Services
 
         public async Task<AuthResponse> Register(RegisterRequest request)
         {
-            if (await _context.Auths.AnyAsync(x => x.Email == request.Email))
+            var normalizedEmail = request.Email.Trim();
+            if (!string.IsNullOrWhiteSpace(request.Password))
+                PasswordHasher.ValidatePassword(request.Password);
+            if (await _context.Auths.AnyAsync(x => x.Email.ToLower() == normalizedEmail.ToLower()))
                 throw new Exception("El email ya existe");
 
             /// buscar rol default
@@ -67,7 +71,7 @@ namespace CENS15_V2.Services
             var auth = new Auth
             {
                 Id = user.Id,
-                Email = request.Email,
+                Email = normalizedEmail,
                 PasswordHash = _hasher.Hash(string.IsNullOrWhiteSpace(request.Password) ? GenerateTemporaryPassword() : request.Password),
                 MustChangePassword = string.IsNullOrWhiteSpace(request.Password),
                 User = user
@@ -97,10 +101,7 @@ namespace CENS15_V2.Services
                 return false;
             }
 
-            if (request.NewPassword.Length < 6)
-            {
-                throw new InvalidOperationException("La nueva contraseña debe tener al menos 6 caracteres.");
-            }
+            PasswordHasher.ValidatePassword(request.NewPassword);
 
             auth.PasswordHash = _hasher.Hash(request.NewPassword);
             auth.MustChangePassword = false;
@@ -151,10 +152,7 @@ namespace CENS15_V2.Services
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
         {
-            if (request.NewPassword.Length < 6)
-            {
-                throw new InvalidOperationException("La nueva contraseña debe tener al menos 6 caracteres.");
-            }
+            PasswordHasher.ValidatePassword(request.NewPassword);
 
             await ValidateResetCodeAsync(request.Email, request.Code, request.NewPassword);
         }

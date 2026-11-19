@@ -13,6 +13,7 @@ namespace CENS15_V2.Models.DTOs.CursosDTOs
         public int IdAnexo { get; set; }
         public string OrientacionNombreCorto { get; set; } = string.Empty;
         public string AnexoNombre { get; set; } = string.Empty;
+        public string? PreceptorNombre { get; set; }
         public bool Semipresencial { get; set; }
     }
 }

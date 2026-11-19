@@ -32,9 +32,10 @@ public sealed class CheckpointService(AppDbContext db, CheckpointStorage storage
     {
         if (!gate.Healthy) throw new CheckpointException("Recuperacion pendiente. Servicio bloqueado.", 503);
         if (caller.FindFirstValue(SessionEpoch.Claim) != epoch.Current) throw new CheckpointException("La sesion ha caducado. Ingrese nuevamente.", 401);
-        var id = caller.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(id, out var userId) || !caller.IsInRole("Admin") ||
-            !await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == userId && u.Status && u.Role.Name == "Admin" && u.Auth != null, ct))
+        if (!ResponsibilityPolicies.TryGetUserId(caller, out var userId)
+            || !ResponsibilityPolicies.HasResponsibility(caller, ResponsibilityPolicies.AdminAccess) ||
+            !await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == userId && u.Status
+                && (u.Role.Name.Trim().ToUpper() == "ADMIN" || u.Role.Name.Trim().ToUpper() == "SUPERADMIN") && u.Auth != null, ct))
             throw new CheckpointException("Solo un Admin activo puede administrar checkpoints.", 403);
         return userId.ToString("D");
     }

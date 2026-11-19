@@ -81,7 +81,7 @@ namespace CENS15_V2.Services
             };
         }
 
-        public async Task<bool> UpdateAsync(Guid id, UpdateRoleRequest request)
+        public Task<bool> UpdateAsync(Guid id, UpdateRoleRequest request) => PreceptorWriteGuard.ExecuteAsync(_context, async () =>
         {
             var role = await _context.Roles
                 .Include(r => r.Responsibilities)
@@ -92,15 +92,18 @@ namespace CENS15_V2.Services
                 return false;
             }
 
-            role.Name = request.Name;
+            if (!PreceptorService.IsPreceptorRole(request.Name)
+                && await _context.Preceptores.AnyAsync(p => p.User != null && p.User.RoleId == id))
+                throw new InvalidOperationException("No se puede renombrar un rol con usuarios vinculados a preceptores. Desvinculalos primero.");
 
             var ids = request.ResponsibilityIds?.Distinct().ToList() ?? new List<Guid>();
             await EnsureResponsibilitiesExistAsync(ids);
+            role.Name = request.Name;
             ReplaceResponsibilities(role, ids);
 
             await _context.SaveChangesAsync();
             return true;
-        }
+        });
 
         public async Task<bool> DeleteAsync(Guid id)
         {

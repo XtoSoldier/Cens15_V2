@@ -283,10 +283,18 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("CursadaMateriaId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("DesdePase")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<int>("DiciembreCondicion")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<string>("DisposicionEquivalencia")
+                        .HasColumnType("text");
 
                     b.Property<string>("Estado")
                         .IsRequired()
@@ -429,6 +437,10 @@ namespace CENS15_V2.Migrations
                     b.Property<int>("OrientacionId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("PreceptorId")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.Property<bool>("Semipresencial")
                         .HasColumnType("boolean");
 
@@ -437,6 +449,8 @@ namespace CENS15_V2.Migrations
                     b.HasIndex("AnexoId");
 
                     b.HasIndex("OrientacionId");
+
+                    b.HasIndex("PreceptorId");
 
                     b.ToTable("Cursos");
                 });
@@ -749,6 +763,40 @@ namespace CENS15_V2.Migrations
                     b.ToTable("Permission");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Preceptor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apellidos")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nombres")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Preceptores");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.Responsibility", b =>
                 {
                     b.Property<Guid>("Id")
@@ -953,9 +1001,16 @@ namespace CENS15_V2.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CENS15_V2.Models.Preceptor", "Preceptor")
+                        .WithMany("Cursos")
+                        .HasForeignKey("PreceptorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Anexo");
 
                     b.Navigation("Orientacion");
+
+                    b.Navigation("Preceptor");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Docente", b =>
@@ -1076,6 +1131,16 @@ namespace CENS15_V2.Migrations
                     b.Navigation("Auth");
                 });
 
+            modelBuilder.Entity("CENS15_V2.Models.Preceptor", b =>
+                {
+                    b.HasOne("CENS15_V2.Entities.User", "User")
+                        .WithOne("Preceptor")
+                        .HasForeignKey("CENS15_V2.Models.Preceptor", "UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CENS15_V2.Models.RolePermission", b =>
                 {
                     b.HasOne("CENS15_V2.Models.Permission", "Permission")
@@ -1131,6 +1196,8 @@ namespace CENS15_V2.Migrations
                         .IsRequired();
 
                     b.Navigation("Docente");
+
+                    b.Navigation("Preceptor");
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Alumno", b =>
@@ -1192,6 +1259,11 @@ namespace CENS15_V2.Migrations
                 });
 
             modelBuilder.Entity("CENS15_V2.Models.Orientacion", b =>
+                {
+                    b.Navigation("Cursos");
+                });
+
+            modelBuilder.Entity("CENS15_V2.Models.Preceptor", b =>
                 {
                     b.Navigation("Cursos");
                 });

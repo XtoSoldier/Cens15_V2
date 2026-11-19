@@ -133,88 +133,81 @@ namespace CENS15_V2.Services
             return await GetMateriasConAlumnosAsync(docenteId.Value, onlyActivas: true);
         }
 
+        public Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasParaCalificarAsync() => BuildPlanillasAsync(null);
+
         private async Task<IEnumerable<DocenteMateriaConAlumnosDto>> GetMateriasConAlumnosAsync(int docenteId, bool onlyActivas)
         {
-            var docente = await _context.Docentes
-                .Include(d => d.Materias)
-                    .ThenInclude(dm => dm.Materia)
-                        .ThenInclude(m => m.Curso)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.Id == docenteId);
+            var materiaIds = await _context.MateriaDocentes.Where(md => md.DocenteId == docenteId
+                && (!onlyActivas || md.Activo)).Select(md => md.MateriaId).ToArrayAsync();
+            return await BuildPlanillasAsync(materiaIds);
+        }
 
-            if (docente == null) return Enumerable.Empty<DocenteMateriaConAlumnosDto>();
-
-            var docenteMaterias = onlyActivas
-                ? docente.Materias.Where(m => m.Activo).ToList()
-                : docente.Materias.ToList();
-
-            var materiaIds = docenteMaterias.Select(m => m.MateriaId).ToList();
-
-            var cursadas = await _context.CursadasMaterias
-                .Include(cm => cm.Inscripcion)
-                    .ThenInclude(i => i.Alumno)
-                .Include(cm => cm.Calificacion)
-                .Where(cm => materiaIds.Contains(cm.MateriaId))
-                .AsNoTracking()
-                .ToListAsync();
+        private async Task<IEnumerable<DocenteMateriaConAlumnosDto>> BuildPlanillasAsync(int[]? materiaIds)
+        {
+            var materias = await _context.Materias.Include(m => m.Curso).AsNoTracking()
+                .Where(m => materiaIds == null || materiaIds.Contains(m.Id)).ToListAsync();
+            var cursoIds = materias.Select(m => m.CursoId).Distinct().ToArray();
+            var inscripciones = await _context.Inscripciones.AsNoTracking().Include(i => i.Alumno)
+                .Include(i => i.CursadasMaterias).ThenInclude(cm => cm.Calificacion)
+                .Where(i => cursoIds.Contains(i.CursoId)).ToListAsync();
 
             var result = new List<DocenteMateriaConAlumnosDto>();
 
-            foreach (var dm in docenteMaterias)
+            foreach (var materia in materias)
             {
-                var materia = dm.Materia;
-                var cursadasDeMateria = cursadas.Where(cm => cm.MateriaId == materia.Id).ToList();
-
-                if (cursadasDeMateria.Count == 0) continue;
-
-                var alumnos = cursadasDeMateria.Select(cm =>
+                var inscripcionesDeCurso = inscripciones.Where(i => i.CursoId == materia.CursoId).ToList();
+                var anios = inscripcionesDeCurso.Select(i => i.Anio).Distinct().DefaultIfEmpty(DateTime.Today.Year);
+                foreach (var anio in anios)
                 {
-                    var cal = cm.Calificacion;
-                    return new AlumnoCalificacionSimpleDto
+                    var alumnos = inscripcionesDeCurso.Where(i => i.Anio == anio).Select(i =>
                     {
-                        AlumnoId = cm.Inscripcion.AlumnoId,
-                        AlumnoNombre = $"{cm.Inscripcion.Alumno.Apellidos}, {cm.Inscripcion.Alumno.Nombres}",
-                        CursadaMateriaId = cm.Id,
-                        CalificacionId = cal?.Id,
-                        C1Nota1 = cal?.C1Nota1,
-                        C1Nota2 = cal?.C1Nota2,
-                        C1Nota3 = cal?.C1Nota3,
-                        C2Nota1 = cal?.C2Nota1,
-                        C2Nota2 = cal?.C2Nota2,
-                        C2Nota3 = cal?.C2Nota3,
-                        C1Condicion = cal?.C1Condicion ?? CondicionNota.Numerica,
-                        C2Condicion = cal?.C2Condicion ?? CondicionNota.Numerica,
-                        DiciembreCondicion = cal?.DiciembreCondicion ?? CondicionNota.Numerica,
-                        MarzoCondicion = cal?.MarzoCondicion ?? CondicionNota.Numerica,
-                        RecuperacionExcepcional = cal?.RecuperacionExcepcional,
-                        C1Promedio = cal?.C1Promedio,
-                        C2Promedio = cal?.C2Promedio,
-                        PromedioAnual = cal?.PromedioAnual,
-                        RecuperacionDiciembre = cal?.RecuperacionDiciembre,
-                        RecuperacionMarzo = cal?.RecuperacionMarzo,
-                        CalificacionFinal = cal?.CalificacionFinal,
-                        Estado = (int)(cal?.Estado ?? 0)
-                    };
-                }).OrderBy(a => a.AlumnoNombre).ToList();
+                        var cm = i.CursadasMaterias.SingleOrDefault(cm => cm.MateriaId == materia.Id);
+                        var cal = cm?.Calificacion;
+                        return new AlumnoCalificacionSimpleDto
+                        {
+                            AlumnoId = i.AlumnoId,
+                            InscripcionId = i.Id,
+                            AlumnoNombre = $"{i.Alumno.Apellidos}, {i.Alumno.Nombres}",
+                            CursadaMateriaId = cm?.Id ?? 0,
+                            CalificacionId = cal?.Id,
+                            C1Nota1 = cal?.C1Nota1,
+                            C1Nota2 = cal?.C1Nota2,
+                            C1Nota3 = cal?.C1Nota3,
+                            C2Nota1 = cal?.C2Nota1,
+                            C2Nota2 = cal?.C2Nota2,
+                            C2Nota3 = cal?.C2Nota3,
+                            C1Condicion = cal?.C1Condicion ?? CondicionNota.Numerica,
+                            C2Condicion = cal?.C2Condicion ?? CondicionNota.Numerica,
+                            DiciembreCondicion = cal?.DiciembreCondicion ?? CondicionNota.Numerica,
+                            MarzoCondicion = cal?.MarzoCondicion ?? CondicionNota.Numerica,
+                            RecuperacionExcepcional = cal?.RecuperacionExcepcional,
+                            C1Promedio = cal?.C1Promedio,
+                            C2Promedio = cal?.C2Promedio,
+                            PromedioAnual = cal?.PromedioAnual,
+                            RecuperacionDiciembre = cal?.RecuperacionDiciembre,
+                            RecuperacionMarzo = cal?.RecuperacionMarzo,
+                            CalificacionFinal = cal?.CalificacionFinal,
+                            Estado = (int)(cal?.Estado ?? 0),
+                            DisposicionEquivalencia = cal?.DisposicionEquivalencia,
+                            DesdePase = cal?.DesdePase ?? false
+                        };
+                    }).OrderBy(a => a.AlumnoNombre).ToList();
 
-                var anio = cursadasDeMateria
-                    .Select(cm => cm.Inscripcion.Anio)
-                    .FirstOrDefault();
-
-                result.Add(new DocenteMateriaConAlumnosDto
-                {
-                    MateriaId = materia.Id,
-                    MateriaNombre = materia.Nombre,
-                    CursoId = materia.CursoId,
-                    CursoNombre = materia.Curso.CursoNombre,
-                    Division = materia.Curso.Division,
-                    CursoLabel = $"{materia.Curso.CursoNombre} {materia.Curso.Division}".Trim(),
-                    Anio = anio,
-                    Alumnos = alumnos
-                });
+                    result.Add(new DocenteMateriaConAlumnosDto
+                    {
+                        MateriaId = materia.Id,
+                        MateriaNombre = materia.Nombre,
+                        CursoId = materia.CursoId,
+                        CursoNombre = materia.Curso.CursoNombre,
+                        Division = materia.Curso.Division,
+                        CursoLabel = $"{materia.Curso.CursoNombre} {materia.Curso.Division}".Trim(),
+                        Anio = anio,
+                        Alumnos = alumnos
+                    });
+                }
             }
 
-            return result.OrderBy(r => r.CursoNombre).ThenBy(r => r.MateriaNombre);
+            return result.OrderBy(r => r.CursoNombre).ThenBy(r => r.Division).ThenBy(r => r.MateriaNombre).ThenByDescending(r => r.Anio);
         }
 
         private async Task ValidateRulesAsync(string nombres, string apellidos, string? email, Guid? userId, int? id = null)

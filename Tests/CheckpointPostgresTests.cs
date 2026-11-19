@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using System.Text.RegularExpressions;
+using AutoMapper;
 using CENS15_V2.Data;
 using CENS15_V2.Entities;
 using CENS15_V2.Helper;
 using CENS15_V2.Models;
 using CENS15_V2.Models.DTOs.AuthDTOs;
+using CENS15_V2.Models.DTOs.PreceptoresDTOs;
 using CENS15_V2.Security;
 using CENS15_V2.Services;
 using CENS15_V2.Services.Interfaces;
@@ -62,13 +64,13 @@ public sealed class CheckpointPostgresTests
             new Claim(SessionEpoch.Claim, Epoch.Current)], "IntegrationTest"));
         public string Upload => Path.Combine(Storage.Uploads, "alumno-documentos", "proof.bin");
 
-        public AppDbContext NewContext()
+        public AppDbContext NewContext(params Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[] interceptors)
         {
             ValidateGeneratedName();
             var isolated = new NpgsqlConnectionStringBuilder(Db.Database.GetConnectionString());
             if (!created || isolated.Database != Name || isolated.Host is not ("localhost" or "127.0.0.1"))
                 throw new InvalidOperationException("Unsafe disposable context target refused.");
-            return new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(isolated.ConnectionString).Options);
+            return new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(isolated.ConnectionString).AddInterceptors(interceptors).Options);
         }
 
         private void ValidateGeneratedName()
@@ -130,7 +132,7 @@ public sealed class CheckpointPostgresTests
             Epoch = new SessionEpoch(Storage);
             Model = new CheckpointModel(Db);
             Recovery = new CheckpointRecovery(Db, Storage, Epoch, Gate);
-            await Recovery.InitializeAsync();
+            await Recovery.InitializeAsync(prepareDatabase: true);
             Service = new CheckpointService(Db, Storage, Gate, Model, Recovery, Epoch, new CheckpointPreviews());
             await SeedAsync();
         }
@@ -221,6 +223,278 @@ public sealed class CheckpointPostgresTests
         }
     }
 
+    [SnapshotPostgresFact]
+    public async Task CalificacionOrigenRoundTripsOnlyInDisposablePostgresAndCleansUp()
+    {
+        string databaseName;
+        NpgsqlConnectionStringBuilder maintenance;
+        await using (var f = await DisposableDatabase.CreateAsync())
+        {
+            maintenance = new NpgsqlConnectionStringBuilder(f.Db.Database.GetConnectionString());
+            databaseName = maintenance.Database!;
+            var mapper = new MapperConfiguration(c => c.AddProfile<AutoMapperProfile>()).CreateMapper();
+            var courseId = await f.Db.Cursos.Select(c => c.Id).SingleAsync();
+            var subjectId = await f.Db.Materias.Select(m => m.Id).SingleAsync();
+            var attendance = new CursadaMateria { MateriaId = subjectId, MateriaNombre = "Origen descartable",
+                Inscripcion = new Inscripcion { CursoId = courseId, Anio = 2026, FechaInscripcion = DateTime.UtcNow,
+                    Alumno = new Alumno { Nombres = "Origen", Apellidos = "Descartable" } } };
+            f.Db.Add(attendance);
+            await f.Db.SaveChangesAsync();
+            var service = new CalificacionService(f.Db, mapper);
+            var created = await service.CreateAsync(new CENS15_V2.Models.DTOs.CalificacionesDTOs.CreateCalificacionRequest
+            {
+                CursadaMateriaId = attendance.Id, Estado = EstadoMateria.AprobadoPorEquivalencia,
+                DisposicionEquivalencia = "  Texto libre <script> & ' sin formato  ",
+                C1Promedio = 5, C2Promedio = 8.25m, C2Condicion = CondicionNota.SinCalificar,
+                C1Nota1 = 1.1m, C1Nota2 = 2.2m, C1Nota3 = 3.3m,
+                C2Nota1 = 4.4m, C2Nota2 = 5.5m, C2Nota3 = 6.6m,
+                RecuperacionDiciembre = 7.25m, DiciembreCondicion = CondicionNota.Ausente
+            });
+            f.Db.ChangeTracker.Clear();
+            await using var isolated = f.NewContext();
+            var reader = new CalificacionService(isolated, mapper);
+            var loaded = (await reader.GetByCursadaMateriaIdAsync(attendance.Id))!;
+            Assert.Equal(EstadoMateria.AprobadoPorEquivalencia, loaded.Estado);
+            Assert.Equal("Texto libre <script> & ' sin formato", loaded.DisposicionEquivalencia);
+            Assert.False(loaded.DesdePase);
+            Assert.Null(loaded.CalificacionFinal);
+            Assert.Null(loaded.PromedioAnual);
+            Assert.Equal(8.25m, loaded.C2Promedio);
+            Assert.Equal(7.25m, loaded.RecuperacionDiciembre);
+            Assert.Equal(6.6m, loaded.C2Nota3);
+            await using (var command = isolated.Database.GetDbConnection().CreateCommand())
+            {
+                await isolated.Database.OpenConnectionAsync();
+                command.CommandText = "SELECT \"Estado\" FROM \"Calificaciones\" WHERE \"Id\" = @id";
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = "id";
+                parameter.Value = created.Id;
+                command.Parameters.Add(parameter);
+                Assert.Equal("AprobadoPorEquivalencia", await command.ExecuteScalarAsync());
+            }
+            var update = new CENS15_V2.Models.DTOs.CalificacionesDTOs.UpdateCalificacionRequest
+            {
+                CursadaMateriaId = attendance.Id, Estado = EstadoMateria.EnCurso, DesdePase = true,
+                C1Promedio = 5, C2Promedio = loaded.C2Promedio, C2Condicion = CondicionNota.SinCalificar,
+                RecuperacionDiciembre = loaded.RecuperacionDiciembre, DiciembreCondicion = CondicionNota.Ausente,
+                C1Nota1 = loaded.C1Nota1, C1Nota2 = loaded.C1Nota2, C1Nota3 = loaded.C1Nota3,
+                C2Nota1 = loaded.C2Nota1, C2Nota2 = loaded.C2Nota2, C2Nota3 = loaded.C2Nota3
+            };
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(created.Id, update));
+            await f.Db.SaveChangesAsync();
+            Assert.Equal(EstadoMateria.AprobadoPorEquivalencia, (await reader.GetByIdAsync(created.Id))!.Estado);
+            update.RecuperacionExcepcional = EstadoMateria.RecuperaAmbos;
+            Assert.True(await service.UpdateAsync(created.Id, update));
+            loaded = (await reader.GetByIdAsync(created.Id))!;
+            Assert.Equal(EstadoMateria.RecuperaAmbos, loaded.Estado);
+            Assert.True(loaded.DesdePase);
+            Assert.Null(loaded.DisposicionEquivalencia);
+            Assert.Null(loaded.C2Promedio);
+            Assert.Equal(0m, loaded.RecuperacionDiciembre);
+            Assert.Equal(5m, loaded.PromedioAnual);
+            Assert.Null(loaded.CalificacionFinal);
+        }
+        maintenance.Database = "postgres";
+        maintenance.Pooling = false;
+        await using var connection = new NpgsqlConnection(maintenance.ConnectionString);
+        await connection.OpenAsync();
+        await using var check = new NpgsqlCommand("SELECT count(*) FROM pg_database WHERE datname = @name", connection);
+        check.Parameters.AddWithValue("name", databaseName);
+        Assert.Equal(0L, await check.ExecuteScalarAsync());
+    }
+
+    private sealed class PauseAfterDeletionLock : Microsoft.EntityFrameworkCore.Diagnostics.DbCommandInterceptor
+    {
+        public TaskCompletionSource Locked { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool locked;
+        public override ValueTask<System.Data.Common.DbDataReader> ReaderExecutedAsync(System.Data.Common.DbCommand command,
+            Microsoft.EntityFrameworkCore.Diagnostics.CommandExecutedEventData eventData, System.Data.Common.DbDataReader result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("FOR UPDATE", StringComparison.Ordinal)) locked = true;
+            return ValueTask.FromResult(result);
+        }
+        public override async ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader>> ReaderExecutingAsync(
+            System.Data.Common.DbCommand command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData eventData,
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (locked)
+            {
+                locked = false;
+                Locked.TrySetResult();
+                await Resume.Task.WaitAsync(TimeSpan.FromSeconds(20), cancellationToken);
+            }
+            return result;
+        }
+    }
+
+    [SnapshotPostgresFact]
+    public async Task PermanentDeletionUsesDisposablePostgresAndNeverCascadesConcurrentChildren()
+    {
+        string databaseName;
+        NpgsqlConnectionStringBuilder maintenance;
+        await using (var f = await DisposableDatabase.CreateAsync())
+        {
+            maintenance = new NpgsqlConnectionStringBuilder(f.Db.Database.GetConnectionString());
+            databaseName = maintenance.Database!;
+            var mapper = new MapperConfiguration(c => c.AddProfile<AutoMapperProfile>()).CreateMapper();
+            var service = new AlumnoService(f.Db, mapper);
+            var original = await f.Db.Alumnos.IgnoreQueryFilters().SingleAsync();
+            var info = await service.GetPermanentDeletionInfoAsync(original.Id);
+            Assert.Equal(new[] { 1, 1, 1, 1, 1, 1 }, info!.Dependencias.Select(d => d.Cantidad));
+            await Assert.ThrowsAsync<DeletionConflictException>(() => service.DeletePermanentlyAsync(original.Id));
+            await Assert.ThrowsAsync<DeletionConflictException>(() => new InscripcionService(f.Db, mapper)
+                .DeleteAsync(f.Db.Inscripciones.IgnoreQueryFilters().Single().Id));
+            Assert.All(f.Db.ChangeTracker.Entries(), e => Assert.Equal(EntityState.Unchanged, e.State));
+            Assert.True(File.Exists(f.Upload));
+
+            // The inscription deletion path must also lock its own row against new cursadas.
+            var emptyInscripcion = new Inscripcion { Alumno = new Alumno { Nombres = "Empty inscription", Eliminado = true },
+                CursoId = await f.Db.Cursos.Select(c => c.Id).SingleAsync(), Anio = 2026, FechaInscripcion = DateTime.UtcNow };
+            f.Db.Add(emptyInscripcion);
+            await f.Db.SaveChangesAsync();
+            var inscriptionPause = new PauseAfterDeletionLock();
+            await using (var deleting = f.NewContext(inscriptionPause))
+            await using (var inserting = f.NewContext())
+            {
+                await inserting.Database.OpenConnectionAsync();
+                var pid = ((NpgsqlConnection)inserting.Database.GetDbConnection()).ProcessID;
+                inserting.Add(new CursadaMateria { InscripcionId = emptyInscripcion.Id,
+                    MateriaId = await f.Db.Materias.Select(m => m.Id).SingleAsync() });
+                var deletion = new InscripcionService(deleting, mapper).DeleteAsync(emptyInscripcion.Id);
+                Task<int>? insertion = null;
+                try
+                {
+                    await inscriptionPause.Locked.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                    insertion = inserting.SaveChangesAsync();
+                    await using var observer = f.NewContext();
+                    var waiting = false;
+                    for (var attempt = 0; attempt < 100 && !waiting; attempt++)
+                    {
+                        waiting = await observer.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE pid = {pid} AND wait_event_type = 'Lock'").SingleAsync() == 1;
+                        if (!waiting) await Task.Delay(50);
+                    }
+                    Assert.True(waiting, "Cursada FK insert must block on the inscription FOR UPDATE lock.");
+                }
+                finally { inscriptionPause.Resume.TrySetResult(); }
+                Assert.True(await deletion);
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => insertion!);
+                Assert.Equal("23503", Assert.IsType<PostgresException>(error.InnerException).SqlState);
+                await using var check = f.NewContext();
+                Assert.False(await check.Inscripciones.IgnoreQueryFilters().AnyAsync(i => i.Id == emptyInscripcion.Id));
+                Assert.True(await new AlumnoService(check, mapper).DeletePermanentlyAsync(emptyInscripcion.AlumnoId));
+            }
+
+            // Every direct FK insertion must wait behind the service's parent-row lock.
+            foreach (var child in new[] { "AlumnoContactos", "AlumnoNacimientos", "AlumnoDocumentos", "Inscripciones" })
+            {
+                var alumno = new Alumno { Nombres = "Disposable", Eliminado = true };
+                f.Db.Add(alumno);
+                await f.Db.SaveChangesAsync();
+                var pause = new PauseAfterDeletionLock();
+                await using var deleting = f.NewContext(pause);
+                await using var inserting = f.NewContext();
+                await inserting.Database.OpenConnectionAsync();
+                var pid = ((NpgsqlConnection)inserting.Database.GetDbConnection()).ProcessID;
+                switch (child)
+                {
+                    case "AlumnoContactos": inserting.Add(new AlumnoContacto { AlumnoId = alumno.Id }); break;
+                    case "AlumnoNacimientos": inserting.Add(new AlumnoNacimiento { AlumnoId = alumno.Id }); break;
+                    case "AlumnoDocumentos": inserting.Add(new AlumnoDocumento { AlumnoId = alumno.Id,
+                        TipoDocumentoAlumnoId = await f.Db.TiposDocumentoAlumno.Select(t => t.Id).SingleAsync() }); break;
+                    case "Inscripciones": inserting.Add(new Inscripcion { AlumnoId = alumno.Id,
+                        CursoId = await f.Db.Cursos.Select(c => c.Id).SingleAsync(), Anio = 2026, FechaInscripcion = DateTime.UtcNow }); break;
+                }
+                var deletion = new AlumnoService(deleting, mapper).DeletePermanentlyAsync(alumno.Id);
+                Task<int>? insertion = null;
+                try
+                {
+                    await pause.Locked.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                    insertion = inserting.SaveChangesAsync();
+                    var waiting = false;
+                    await using var observer = f.NewContext();
+                    for (var attempt = 0; attempt < 100 && !waiting; attempt++)
+                    {
+                        waiting = await observer.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE pid = {pid} AND wait_event_type = 'Lock'").SingleAsync() == 1;
+                        if (!waiting) await Task.Delay(50);
+                    }
+                    Assert.True(waiting, "Concurrent child FK insert must block on the parent FOR UPDATE lock.");
+                }
+                finally { pause.Resume.TrySetResult(); }
+                Assert.True(await deletion);
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => insertion!);
+                Assert.Equal("23503", Assert.IsType<PostgresException>(error.InnerException).SqlState);
+                await using var check = f.NewContext();
+                Assert.False(await check.Alumnos.IgnoreQueryFilters().AnyAsync(a => a.Id == alumno.Id));
+            }
+
+            // The reverse race: insert holds KEY SHARE before deletion takes its snapshot/lock.
+            // A later child commit must produce 409, never cascade that newly committed child.
+            foreach (var child in new[] { "AlumnoContactos", "AlumnoNacimientos", "AlumnoDocumentos", "Inscripciones" })
+            {
+                var alumno = new Alumno { Nombres = "Keep concurrent child" };
+                f.Db.Add(alumno);
+                await f.Db.SaveChangesAsync();
+                await using var inserting = f.NewContext();
+                await using var insertTransaction = await inserting.Database.BeginTransactionAsync();
+                switch (child)
+                {
+                    case "AlumnoContactos": inserting.Add(new AlumnoContacto { AlumnoId = alumno.Id }); break;
+                    case "AlumnoNacimientos": inserting.Add(new AlumnoNacimiento { AlumnoId = alumno.Id }); break;
+                    case "AlumnoDocumentos": inserting.Add(new AlumnoDocumento { AlumnoId = alumno.Id,
+                        TipoDocumentoAlumnoId = await f.Db.TiposDocumentoAlumno.Select(t => t.Id).SingleAsync() }); break;
+                    case "Inscripciones": inserting.Add(new Inscripcion { AlumnoId = alumno.Id,
+                        CursoId = await f.Db.Cursos.Select(c => c.Id).SingleAsync(), Anio = 2026, FechaInscripcion = DateTime.UtcNow }); break;
+                }
+                await inserting.SaveChangesAsync();
+                await using var deleting = f.NewContext();
+                await deleting.Database.OpenConnectionAsync();
+                var pid = ((NpgsqlConnection)deleting.Database.GetDbConnection()).ProcessID;
+                var deletion = new AlumnoService(deleting, mapper).DeletePermanentlyAsync(alumno.Id);
+                try
+                {
+                    await using var observer = f.NewContext();
+                    var waiting = false;
+                    for (var attempt = 0; attempt < 100 && !waiting; attempt++)
+                    {
+                        waiting = await observer.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE pid = {pid} AND wait_event_type = 'Lock'").SingleAsync() == 1;
+                        if (!waiting) await Task.Delay(50);
+                    }
+                    Assert.True(waiting, "Deletion must wait for the in-flight child insert.");
+                }
+                finally { await insertTransaction.CommitAsync(); }
+                await Assert.ThrowsAsync<DeletionConflictException>(() => deletion);
+                await using var check = f.NewContext();
+                var after = await new AlumnoService(check, mapper).GetPermanentDeletionInfoAsync(alumno.Id);
+                Assert.False(after!.PuedeEliminar);
+                Assert.Equal(1, after.Dependencias.Single(d => d.Entidad == child).Cantidad);
+                Assert.All(deleting.ChangeTracker.Entries(), e => Assert.Equal(EntityState.Unchanged, e.State));
+            }
+
+            // A child committed before validation blocks deletion and remains unchanged.
+            await using (var adding = f.NewContext())
+            {
+                var alumno = new Alumno { Nombres = "Keep", Contacto = new AlumnoContacto() };
+                adding.Add(alumno);
+                await adding.SaveChangesAsync();
+                await using var deleting = f.NewContext();
+                await Assert.ThrowsAsync<DeletionConflictException>(() => new AlumnoService(deleting, mapper).DeletePermanentlyAsync(alumno.Id));
+                Assert.True(await adding.AlumnoContactos.IgnoreQueryFilters().AnyAsync(c => c.AlumnoId == alumno.Id));
+            }
+            Assert.False(await service.DeletePermanentlyAsync(int.MaxValue));
+            Assert.Single(await f.Db.Calificaciones.IgnoreQueryFilters().ToListAsync());
+            Assert.True(File.Exists(f.Upload));
+        }
+        // Confirm that fixture cleanup actually removed the generated database.
+        maintenance.Database = "postgres";
+        await using var connection = new NpgsqlConnection(maintenance.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand("SELECT count(*) FROM pg_database WHERE datname = @name", connection);
+        command.Parameters.AddWithValue("name", databaseName);
+        Assert.Equal(0L, (long)(await command.ExecuteScalarAsync())!);
+    }
+
     private sealed class OtpEmail : IEmailService
     {
         public string Code { get; private set; } = string.Empty;
@@ -240,6 +514,136 @@ public sealed class CheckpointPostgresTests
     private static AuthService OtpService(AppDbContext db, OtpEmail email) => new(db, new OtpTokens(),
         new PasswordHasher(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             { ["Security:BCryptWorkFactor"] = "4" }).Build()), email);
+
+    [SnapshotPostgresFact]
+    public async Task PreceptorAssignmentsEnforceRelationalIntegrityAndRollback()
+    {
+        string databaseName;
+        NpgsqlConnectionStringBuilder maintenance;
+        await using (var f = await DisposableDatabase.CreateAsync())
+        {
+            // Derive cleanup verification only from the fixture's validated disposable target.
+            await using (var target = f.NewContext())
+            {
+                maintenance = new NpgsqlConnectionStringBuilder(target.Database.GetConnectionString());
+                databaseName = maintenance.Database!;
+            }
+            var mapper = new MapperConfiguration(config => config.AddProfile<AutoMapperProfile>()).CreateMapper();
+            var userId = Guid.NewGuid();
+            int firstCourseId;
+            int secondCourseId;
+            int freeCourseId;
+            await using (var setup = f.NewContext())
+            {
+                var existing = await setup.Cursos.SingleAsync();
+                firstCourseId = existing.Id;
+                var second = new Curso { CursoNombre = "Second year", Division = "B",
+                    AnexoId = existing.AnexoId, OrientacionId = existing.OrientacionId };
+                var free = new Curso { CursoNombre = "First year", Division = "C",
+                    AnexoId = existing.AnexoId, OrientacionId = existing.OrientacionId };
+                setup.Cursos.AddRange(second, free);
+                setup.Users.Add(new User { Id = userId, FirstName = "Preceptor", LastName = "Integration",
+                    Status = true, Role = new Role { Id = Guid.NewGuid(), Name = "Preceptor" } });
+                await setup.SaveChangesAsync();
+                secondCourseId = second.Id;
+                freeCourseId = free.Id;
+            }
+
+            var request = new GuardarPreceptorRequest { Nombres = "Preceptor", Apellidos = "Integration",
+                UserId = userId, CursoIds = [firstCourseId, secondCourseId] };
+            int preceptorId;
+            await using (var create = f.NewContext())
+            {
+                var item = await new PreceptorService(create, mapper).CreateAsync(request);
+                preceptorId = item.Id;
+                Assert.Equal(request.CursoIds.Order(), item.Cursos.Select(c => c.Id).Order());
+                Assert.Equal(userId, item.UserId);
+            }
+            await using (var occupied = f.NewContext())
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(() => new PreceptorService(occupied, mapper)
+                    .CreateAsync(new GuardarPreceptorRequest { Nombres = "Other", Apellidos = "Preceptor",
+                        CursoIds = [secondCourseId] }));
+            }
+            await using (var duplicate = f.NewContext())
+            {
+                duplicate.Preceptores.Add(new Preceptor { Nombres = "Duplicate", Apellidos = "User", UserId = userId });
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => duplicate.SaveChangesAsync());
+                var postgres = Assert.IsType<PostgresException>(error.InnerException);
+                Assert.Equal("23505", postgres.SqlState);
+                Assert.Equal("IX_Preceptores_UserId", postgres.ConstraintName);
+            }
+            await using (var check = f.NewContext())
+            {
+                Assert.Equal(1, await check.Preceptores.CountAsync());
+                Assert.Equal(3, await check.Cursos.CountAsync());
+                Assert.Equal(2, await check.Users.CountAsync());
+                Assert.Equal(2, await check.Cursos.CountAsync(c => c.PreceptorId == preceptorId));
+                Assert.Null((await check.Cursos.SingleAsync(c => c.Id == freeCourseId)).PreceptorId);
+            }
+
+            await using (var invalid = f.NewContext())
+            {
+                Assert.False(await invalid.Preceptores.AnyAsync(p => p.Id == int.MaxValue));
+                var pending = new Preceptor { Nombres = "Must rollback", Apellidos = "Integration" };
+                invalid.Preceptores.Add(pending);
+                (await invalid.Cursos.SingleAsync(c => c.Id == freeCourseId)).Preceptor = pending;
+                (await invalid.Cursos.SingleAsync(c => c.Id == secondCourseId)).PreceptorId = int.MaxValue;
+                // One SaveChanges inserts a parent and updates two courses; the invalid FK must undo all writes.
+                var error = await Assert.ThrowsAsync<DbUpdateException>(() => invalid.SaveChangesAsync());
+                var postgres = Assert.IsType<PostgresException>(error.InnerException);
+                Assert.Equal("23503", postgres.SqlState);
+                Assert.Equal("FK_Cursos_Preceptores_PreceptorId", postgres.ConstraintName);
+            }
+            await using (var check = f.NewContext())
+            {
+                Assert.Equal(preceptorId, (await check.Preceptores.SingleAsync()).Id);
+                Assert.Equal(3, await check.Cursos.CountAsync());
+                Assert.Equal(2, await check.Users.CountAsync());
+                Assert.Equal(2, await check.Cursos.CountAsync(c => c.PreceptorId == preceptorId));
+                Assert.Null((await check.Cursos.SingleAsync(c => c.Id == freeCourseId)).PreceptorId);
+            }
+
+            await using (var delete = f.NewContext())
+            {
+                // Do not load courses: SET NULL must be performed by PostgreSQL, not relationship fixup.
+                delete.Preceptores.Remove(await delete.Preceptores.SingleAsync());
+                await delete.SaveChangesAsync();
+            }
+            await using (var check = f.NewContext())
+            {
+                Assert.Empty(await check.Preceptores.ToListAsync());
+                Assert.Equal(3, await check.Cursos.CountAsync());
+                Assert.All(await check.Cursos.ToListAsync(), c => Assert.Null(c.PreceptorId));
+                Assert.True(await check.Users.AnyAsync(u => u.Id == userId));
+            }
+            await using (var recreate = f.NewContext())
+                preceptorId = (await new PreceptorService(recreate, mapper).CreateAsync(request)).Id;
+            await using (var delete = f.NewContext())
+            {
+                // Likewise leave the preceptor unloaded to exercise ON DELETE SET NULL on UserId.
+                delete.Users.Remove(await delete.Users.SingleAsync(u => u.Id == userId));
+                await delete.SaveChangesAsync();
+            }
+            await using (var check = f.NewContext())
+            {
+                var item = await check.Preceptores.SingleAsync();
+                Assert.Equal(preceptorId, item.Id);
+                Assert.Null(item.UserId);
+                Assert.False(await check.Users.AnyAsync(u => u.Id == userId));
+                Assert.Equal(3, await check.Cursos.CountAsync());
+                Assert.Equal(2, await check.Cursos.CountAsync(c => c.PreceptorId == preceptorId));
+            }
+        }
+
+        maintenance.Database = "postgres";
+        await using var connection = new NpgsqlConnection(maintenance.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand("SELECT count(*) FROM pg_database WHERE datname = @name", connection);
+        command.Parameters.AddWithValue("name", databaseName);
+        Assert.Equal(0L, await command.ExecuteScalarAsync());
+        Assert.False(Directory.Exists(Path.Combine(TemporaryParent, databaseName)));
+    }
 
     [SnapshotPostgresFact]
     public async Task OtpInitialAccessConcurrentRedeemSucceedsExactlyOnceAndRejectsReplay()
